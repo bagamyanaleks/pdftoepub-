@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to EPUB & AZW3 Studio - Yerel Türkçe OCR & E-Kitap Dönüştürücü</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                        <path d="m14.5 12.5 2 2"></path>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>PDF to EPUB & AZW3 Studio</h1>
+                    <p class="subtitle">Kayıpsız Türkçe OCR & Kindle E-Kitap Dönüştürücü</p>
+                </div>
+            </div>
+
+            <!-- Hardware Badges -->
+            <div class="status-badges">
+                <div class="badge badge-gpu" id="gpu-badge">
+                    <span class="indicator pulse"></span>
+                    <span class="badge-label" id="gpu-label">NVIDIA RTX 3050 (CUDA Aktif)</span>
+                </div>
+                <div class="badge badge-local">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>%100 Yerel & Çevrimdışı</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Grid Layout -->
+        <main class="main-layout">
+            <!-- Left Panel: Input & Settings -->
+            <section class="card panel-input">
+                <div class="tabs">
+                    <button class="tab-btn active" id="tab-upload-btn" onclick="switchTab('upload')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Yeni PDF Yükle
+                    </button>
+                    <button class="tab-btn" id="tab-workspace-btn" onclick="switchTab('workspace')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Klasördeki Kitaplar (<span id="workspace-count">0</span>)
+                    </button>
+                </div>
+
+                <!-- Tab 1: Upload Dropzone -->
+                <div class="tab-content" id="tab-upload">
+                    <div class="dropzone" id="dropzone">
+                        <input type="file" id="file-input" accept=".pdf" style="display: none;">
+                        <div class="dropzone-content">
+                            <div class="drop-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <path d="M12 18v-6"></path>
+                                    <path d="m9 15 3-3 3 3"></path>
+                                </svg>
+                            </div>
+                            <h3>PDF Dosyasını Buraya Sürükleyin</h3>
+                            <p>veya bilgisayarınızdan seçmek için tıklayın</p>
+                            <span class="file-hint">Metin, resim veya taranmış dökümanlar desteklenir</span>
+                        </div>
+                        <div class="file-selected-banner" id="selected-file-banner" style="display: none;">
+                            <div class="file-info">
+                                <span class="file-name" id="selected-file-name">kitap.pdf</span>
+                                <span class="file-size" id="selected-file-size">(4.2 MB)</span>
+                            </div>
+                            <button type="button" class="btn-clear" onclick="clearSelectedFile(event)">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Existing Workspace Books -->
+                <div class="tab-content" id="tab-workspace" style="display: none;">
+                    <div class="workspace-list" id="workspace-list">
+                        <div class="loading-spinner-small">Kitaplar taranıyor...</div>
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div class="conversion-options">
+                    <h4 class="section-title">Dönüştürme Ayarları</h4>
+                    
+                    <div class="form-group">
+                        <label for="ocr-mode">OCR Stratejisi</label>
+                        <select id="ocr-mode" class="custom-select">
+                            <option value="auto" selected>Akıllı Otomatik (Önerilen - Yalnızca Gerektiğinde)</option>
+                            <option value="force">Zorunlu GPU OCR (Tüm Sayfaları Tara)</option>
+                            <option value="none">OCR Yapma (Yalnızca Mevcut Vektörel Metni Al)</option>
+                        </select>
+                        <small class="field-help">Akıllı mod, taranmış sayfaları GPU ile okur; temiz metinleri anında kayıpsız aktarır.</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="book-title">Kitap Başlığı (İsteğe bağlı)</label>
+                            <input type="text" id="book-title" placeholder="Otomatik algılanır">
+                        </div>
+                        <div class="form-group">
+                            <label for="book-author">Yazar (İsteğe bağlı)</label>
+                            <input type="text" id="book-author" placeholder="Otomatik algılanır">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" id="btn-convert" onclick="startConversion()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Dönüştürmeyi Başlat (EPUB & AZW3)
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Panel: Realtime Status & Output -->
+            <section class="card panel-output">
+                <h3 class="panel-heading">İşlem & Çıktı Merkezi</h3>
+
+                <!-- Idle State -->
+                <div class="state-container state-idle" id="state-idle">
+                    <div class="empty-art">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2v4"></path>
+                            <path d="m4.93 4.93 2.83 2.83"></path>
+                            <path d="M2 12h4"></path>
+                            <path d="m4.93 19.07 2.83-2.83"></path>
+                            <path d="M12 22v-4"></path>
+                            <path d="m19.07 19.07-2.83-2.83"></path>
+                            <path d="M22 12h-4"></path>
+                            <path d="m19.07 4.93-2.83 2.83"></path>
+                        </svg>
+                    </div>
+                    <h4>Dönüştürmeye Hazır</h4>
+                    <p>Soldaki alandan bir PDF yükleyin veya klasörden mevcut bir kitap seçin.</p>
+                </div>
+
+                <!-- Processing State -->
+                <div class="state-container state-processing" id="state-processing" style="display: none;">
+                    <div class="pipeline-steps">
+                        <div class="step-item" id="step-1">
+                            <span class="step-num">1</span>
+                            <span class="step-text">Analiz</span>
+                        </div>
+                        <div class="step-arrow">&rarr;</div>
+                        <div class="step-item" id="step-2">
+                            <span class="step-num">2</span>
+                            <span class="step-text">OCR & Metin</span>
+                        </div>
+                        <div class="step-arrow">&rarr;</div>
+                        <div class="step-item" id="step-3">
+                            <span class="step-num">3</span>
+                            <span class="step-text">Türkçe Temizlik</span>
+                        </div>
+                        <div class="step-arrow">&rarr;</div>
+                        <div class="step-item" id="step-4">
+                            <span class="step-num">4</span>
+                            <span class="step-text">EPUB & AZW3</span>
+                        </div>
+                    </div>
+
+                    <div class="progress-wrap">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 5%;"></div>
+                        </div>
+                        <div class="progress-meta">
+                            <span class="progress-status" id="progress-status">Başlatılıyor...</span>
+                            <span class="progress-percent" id="progress-percent">5%</span>
+                        </div>
+                    </div>
+
+                    <div class="processing-animation">
+                        <div class="spinner"></div>
+                        <p class="processing-note">RTX 3050 GPU ile yerel olarak işleniyor. Bilgisayarınızdan harici veri çıkışı yapılmaz.</p>
+                    </div>
+                </div>
+
+                <!-- Completed State -->
+                <div class="state-container state-completed" id="state-completed" style="display: none;">
+                    <div class="success-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                    <h3 class="result-title" id="result-title">Kitap Başlığı</h3>
+                    <p class="result-author" id="result-author">Yazar Adı</p>
+
+                    <div class="result-stats">
+                        <div class="stat-pill">
+                            <span class="stat-val" id="stat-pages">0</span>
+                            <span class="stat-lbl">Sayfa</span>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="stat-val" id="stat-ocr">0</span>
+                            <span class="stat-lbl">OCR Sayfa</span>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="stat-val" id="stat-chapters">0</span>
+                            <span class="stat-lbl">Bölüm</span>
+                        </div>
+                    </div>
+
+                    <!-- Download Buttons -->
+                    <div class="download-actions">
+                        <a id="btn-download-epub" class="btn btn-download btn-epub" href="#" download>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>EPUB İndir</span>
+                            <small class="btn-subtext">Kindle Send-to-Kindle, Apple, Kobo</small>
+                        </a>
+
+                        <a id="btn-download-azw3" class="btn btn-download btn-azw3" href="#" download>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>AZW3 İndir</span>
+                            <small class="btn-subtext">Kindle USB Kablo Yüklemesi</small>
+                        </a>
+                    </div>
+
+                    <div class="azw3-notice" id="azw3-notice" style="display: none;">
+                        <span class="notice-icon">ℹ️</span>
+                        <span id="azw3-notice-text"></span>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="resetConverter()" style="margin-top: 1.5rem;">
+                        Başka Bir Kitap Dönüştür
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
