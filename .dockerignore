@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Converted Ebooks, Uploaded PDFs & Outputs
+converted_ebooks/
+*.epub
+*.azw3
+*.pdf
+
+# Tests & Temporary files
+tests/
+scratch/
+temp/
+tmp/
+*.log
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.bak

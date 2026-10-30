@@ -3,6 +3,7 @@ Web UI Launcher for PDF to EPUB & AZW3 Studio.
 Runs FastAPI with Uvicorn and provides a safe, GPU-optimized local web studio.
 """
 
+import os
 import sys
 import webbrowser
 import threading
@@ -21,10 +22,14 @@ def open_browser_safely(url: str, delay: float = 2.0):
 
 
 def main():
+    default_host = os.getenv("HOST", "127.0.0.1")
+    default_port = int(os.getenv("PORT", "8000"))
+    default_no_browser = os.getenv("NO_BROWSER", "").lower() in ("1", "true", "yes")
+
     parser = argparse.ArgumentParser(description="PDF to EPUB & AZW3 Web Studio")
-    parser.add_argument("--host", default="127.0.0.1", help="Sunucu adresi (Varsayılan: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8000, help="Sunucu portu (Varsayılan: 8000)")
-    parser.add_argument("--no-browser", action="store_true", help="Tarayıcıyı otomatik açma")
+    parser.add_argument("--host", default=default_host, help=f"Sunucu adresi (Varsayılan: {default_host})")
+    parser.add_argument("--port", type=int, default=default_port, help=f"Sunucu portu (Varsayılan: {default_port})")
+    parser.add_argument("--no-browser", action="store_true", default=default_no_browser, help="Tarayıcıyı otomatik açma")
     args = parser.parse_args()
 
     url = f"http://{args.host}:{args.port}"

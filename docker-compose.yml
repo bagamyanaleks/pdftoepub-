@@ -1,0 +1,55 @@
+services:
+  # NVIDIA GPU Hızlandırmalı Servis (Varsayılan - NVIDIA Ekran Kartı Olanlar İçin)
+  pdftoepub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cu121
+    image: pdftoepub-studio:gpu
+    container_name: pdftoepub-studio
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./converted_ebooks:/app/converted_ebooks
+      - easyocr_cache:/root/.EasyOCR
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HOST=0.0.0.0
+      - PORT=8000
+      - NO_BROWSER=true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # CPU Tabanlı Servis (NVIDIA Ekran Kartı Olmayan Cihazlar / Sunucular İçin)
+  pdftoepub-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cpu
+    image: pdftoepub-studio:cpu
+    container_name: pdftoepub-studio-cpu
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./converted_ebooks:/app/converted_ebooks
+      - easyocr_cache:/root/.EasyOCR
+    environment:
+      - PYTHONUNBUFFERED=1
+      - HOST=0.0.0.0
+      - PORT=8000
+      - NO_BROWSER=true
+    profiles:
+      - cpu
+
+volumes:
+  easyocr_cache:
+    name: pdftoepub_easyocr_cache

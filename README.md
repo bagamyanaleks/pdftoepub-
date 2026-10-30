@@ -2,6 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue?logo=python" alt="Python Version" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker Ready" />
   <img src="https://img.shields.io/badge/CUDA-GPU%20Accelerated-green?logo=nvidia" alt="NVIDIA CUDA" />
   <img src="https://img.shields.io/badge/OCR-EasyOCR%20%2B%20CRAFT-orange" alt="EasyOCR" />
   <img src="https://img.shields.io/badge/Kindle-AZW3%20%26%20EPUB3-purple?logo=amazon" alt="Kindle & EPUB" />
@@ -101,7 +102,46 @@ Converting PDF books into clean E-books (EPUB / Kindle AZW3) is notoriously diff
 
 ---
 
-## Step-by-Step Installation
+## 🐳 Quick Start with Docker (Recommended)
+
+Docker provides a zero-setup experience: **you don't need to install Python, PyTorch, CUDA toolkits, or Calibre on your host machine.** Everything comes packaged and ready to run.
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows / macOS) or Docker Engine + Docker Compose (Linux).
+- *(For GPU acceleration)*: NVIDIA GPU + NVIDIA Container Toolkit (built into Docker Desktop on Windows with WSL2).
+
+### 1. Start the Studio
+
+* **With NVIDIA GPU Acceleration (Default):**
+  ```bash
+  docker compose up -d
+  ```
+
+* **CPU-Only Mode (For Macs, laptops, or cloud servers without NVIDIA GPU):**
+  ```bash
+  docker compose --profile cpu up pdftoepub-cpu -d
+  ```
+
+### 2. Open Web Studio
+Navigate to: **`http://localhost:8000`** in your web browser.
+
+* **Persistent Files:** Converted `.epub` and `.azw3` books are automatically saved to your local `./converted_ebooks` directory.
+* **Cached Models:** EasyOCR model weights are stored in a persistent Docker volume (`pdftoepub_easyocr_cache`), so models are never re-downloaded.
+* **Stop Studio:**
+  ```bash
+  docker compose down
+  ```
+
+### 🔄 Updating Docker (After Code Updates)
+Whenever you pull new commits or make changes to the code:
+```bash
+git pull
+docker compose up --build -d
+```
+
+---
+
+## 💻 Manual Installation (Without Docker)
 
 ### 1. Clone the Repository
 ```bash
@@ -237,7 +277,47 @@ PDF formatındaki kitapları e-okuyucular (Kindle, Kobo) veya telefonlar için d
 
 ---
 
-## Adım Adım Kurulum Rehberi
+## 🐳 Docker ile Hızlı Başlangıç (Önerilen Yöntem)
+
+Docker sayesinde bilgisayarınıza **Python sürümü, Calibre, PyTorch veya CUDA paketleri kurmanıza gerek kalmaz.** Tüm bağımlılıklar konteyner içinde hazır gelir.
+
+### Ön Koşullar
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows / macOS) veya Docker Engine + Compose (Linux).
+- *(GPU Hızlandırma İçin)*: NVIDIA Ekran Kartı (Windows Docker Desktop'ta WSL2 ile otomatik tanınır).
+
+### 1. Stüdyoyu Başlatın
+
+* **NVIDIA GPU Hızlandırması ile (Varsayılan - Önerilen):**
+  ```bash
+  docker compose up -d
+  ```
+
+* **Yalnızca CPU Modu (NVIDIA ekran kartı olmayan cihazlar için):**
+  ```bash
+  docker compose --profile cpu up pdftoepub-cpu -d
+  ```
+
+### 2. Web Arayüzünü Açın
+Tarayıcınızdan şu adrese gidin:
+👉 **`http://localhost:8000`**
+
+* **Kalıcı Kitaplar:** Üretilen `.epub` ve `.azw3` dosyaları doğrudan bilgisayarınızdaki `./converted_ebooks` klasörüne kaydedilir.
+* **Akıllı Model Önbelleği:** EasyOCR modelleri bir Docker volume'unda saklanır, her açılışta tekrar model indirilmez.
+* **Durdurmak İçin:**
+  ```bash
+  docker compose down
+  ```
+
+### 🔄 Docker Güncelleme (Kod Değişikliklerinde)
+Depodan yeni güncellemeler çektiğinizde veya kodda değişiklik yaptığınızda konteyneri güncellemek için:
+```bash
+git pull
+docker compose up --build -d
+```
+
+---
+
+## 💻 Manuel Kurulum Rehberi (Docker Olmadan)
 
 ### 1. Depoyu Klonlayın
 ```bash
