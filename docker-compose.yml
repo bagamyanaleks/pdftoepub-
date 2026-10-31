@@ -53,3 +53,4 @@ services:
 volumes:
   easyocr_cache:
     name: pdftoepub_easyocr_cache
+

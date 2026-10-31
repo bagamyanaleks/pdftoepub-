@@ -6,6 +6,7 @@ Identifies chapters, headers, and builds the Table of Contents (TOC).
 import re
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
+from .cleaner import turkish_lower
 
 
 CHAPTER_PATTERNS = [
@@ -72,13 +73,24 @@ class StructureDetector:
         lower_compact = re.sub(r"\s+", "", lower)
 
         # Reject if matches author name or book title
+        lower_clean = re.sub(r"[^\w\s]", "", turkish_lower(cleaned))
+        lower_compact = re.sub(r"\s+", "", lower_clean)
+
         if author:
-            auth_compact = re.sub(r"\s+", "", author.lower())
-            if auth_compact and auth_compact in lower_compact:
+            auth_clean = re.sub(r"[^\w\s]", "", turkish_lower(author))
+            auth_compact = re.sub(r"\s+", "", auth_clean)
+            if auth_compact and (auth_compact in lower_compact or lower_compact in auth_compact):
                 return False
+
         if book_title:
-            title_compact = re.sub(r"\s+", "", book_title.lower())
-            if title_compact and title_compact in lower_compact:
+            title_clean = re.sub(r"[^\w\s]", "", turkish_lower(book_title))
+            title_compact = re.sub(r"\s+", "", title_clean)
+            if title_compact and (title_compact in lower_compact or lower_compact in title_compact):
+                return False
+
+            title_words = set(w for w in title_clean.split() if len(w) >= 3)
+            heading_words = set(w for w in lower_clean.split() if len(w) >= 3)
+            if heading_words and heading_words.issubset(title_words):
                 return False
 
         # Reject publisher boilerplate

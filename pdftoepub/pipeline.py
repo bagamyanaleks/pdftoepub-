@@ -304,11 +304,20 @@ class ConversionPipeline:
                                 continue
 
                         # Cross-page paragraph continuation
-                        # If this is the first paragraph of the page and previous block was a body paragraph
-                        if first_p and document_blocks and document_blocks[-1].block_type == "paragraph":
-                            prev_text = document_blocks[-1].text.strip()
+                        # If this is the first paragraph of the page, find the most recent paragraph block
+                        prev_p_idx = None
+                        if first_p and document_blocks:
+                            for b_i in range(len(document_blocks) - 1, -1, -1):
+                                if document_blocks[b_i].block_type == "paragraph":
+                                    prev_p_idx = b_i
+                                    break
+                                elif document_blocks[b_i].block_type == "heading":
+                                    break
+
+                        if prev_p_idx is not None:
+                            prev_text = document_blocks[prev_p_idx].text.strip()
                             ends_with_terminal = bool(re.search(r'[\.!\?…\"”\']$', prev_text))
-                            ends_with_hyphen = bool(re.search(r'[-–—\xad]$', prev_text))
+                            ends_with_hyphen = bool(re.search(r'[-–—\xad·•]$', prev_text))
                             is_dialogue = p_stripped.startswith("—") or p_stripped.startswith("- ") or p_stripped.startswith('"')
 
                             # Merge into previous paragraph if not a dialogue and either ends with hyphen or lacks terminal punctuation
@@ -317,7 +326,7 @@ class ConversionPipeline:
                                     merged = self.cleaner.dehyphenate(prev_text + "\n" + p_stripped)
                                 else:
                                     merged = prev_text + " " + p_stripped
-                                document_blocks[-1].text = self.cleaner.heal_split_words(merged)
+                                document_blocks[prev_p_idx].text = self.cleaner.heal_split_words(merged)
                                 first_p = False
                                 continue
 

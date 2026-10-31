@@ -23,6 +23,13 @@ def turkish_upper(s: str) -> str:
     return s.replace("i", "İ").replace("ı", "I").upper()
 
 
+# Common Turkish abbreviations where period before lowercase is expected
+TURKISH_ABBREVIATIONS = {
+    "vb", "vs", "bkz", "dr", "prof", "av", "sn", "st", "jr", "mr", "mrs", "ms",
+    "sf", "s", "no", "mad", "cad", "sok", "apt", "bl", "böl"
+}
+
+
 # Common Turkish OCR misrecognitions
 OCR_REPLACEMENTS = [
     # Ligatures
@@ -32,7 +39,7 @@ OCR_REPLACEMENTS = [
     (r"\ufb03", "ffi"),
     (r"\ufb04", "ffl"),
     
-    # Numbers and symbols misread for whole common Turkish words (must run before generic mid-word rules)
+    # Numbers and symbols misread for whole common Turkish words
     (r"\bb[1ı]r\b", "bir"),
     (r"\b1le\b", "ile"),
     (r"\b1ç[1ı]n\b", "için"),
@@ -41,10 +48,77 @@ OCR_REPLACEMENTS = [
     (r"\bg[1ı]b[1ı]\b", "gibi"),
     (r"\byada\b", "ya da"),
 
+    # Middle dots and bullets appearing as dirt inside or around words
+    (r"(?<=[a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])[ \t]*[·•][ \t]*(?=[a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])", ""),
+    (r"[·•]\s*([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)", r"\1"),
+
+    # In-word periods from dust/scan noise (e.g. 'Mex.ico' -> 'Mexico', 'Gr.aciela' -> 'Graciela')
+    (r"(?<=[a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]{2})\.(?=[a-zçğıöşü]{2,}\b)", ""),
+
+    # Double/stray quotes inside words (e.g. 'dünya"y"ıgözlerimizin' -> 'dünyayı gözlerimizin')
+    (r'([a-zçğıöşüA-ZÇĞİÖŞÜ])["”\']([a-zçğıöşüA-ZÇĞİÖŞÜ])["”\']([a-zçğıöşüA-ZÇĞİÖŞÜ])\s*', r'\1\2\3 '),
+    (r'(?<=[a-zçğıöşü])"(?=[a-zçğıöşü])', ""),
+    (r'\b[1ı]{2}(?=[A-ZÇĞİÖŞÜ])', '"'),  # '11En iyi' / 'ııEn iyi' -> '"En iyi'
+
+    # Ampersand misrecognitions inside words & standard expressions
+    (r"\bbu\s+ar&\s+da\s+da\b", "bu arada da"),
+    (r"\bar&\s+da\s+da\b", "arada da"),
+    (r"\bar&\s+da\b", "arada"),
+    (r"\bd&vam\b", "devam"),
+    (r"\bOys&\b", "Oysa"),
+    (r"\boyn&\b", "oyna"),
+    (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])&([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])", r"\1a\2"),
+
+    # Digit '7' misread for question mark '?'
+    (r"(\b(?:mı|mi|mu|mü|misin|misiniz|musun|musunuz|miydi|mıydı|miymiş|mıymış|miyim|mıyım))7\b", r"\1?"),
+    (r"([a-zçğıöşüA-ZÇĞİÖŞÜ]{3,})7\b(?=[\s\"”'\)—\.\?!]|$)", r"\1?"),
+    (r"(\bm[ıi]|\bmu|\bmü):(?=\?)", r"\1"),
+    (r":+\?", "?"),
+
     # Common OCR letter confusions in Turkish
     (r"\bcl([a-zçğıöşüA-ZÇĞİÖŞÜ]+)", r"d\1"),    # clünya -> dünya, clar -> dar
     (r"\b1([a-zçğıöşü]{2,})", r"i\1"),          # 1çinde -> içinde, 1le -> ile
     (r"([a-zçğıöşü])1([a-zçğıöşü])", r"\1ı\2"),   # yap1lan -> yapılan
+
+    # Specific corrupted author, character, and title names
+    (r"\bOscar\s+[ıIİi1]?[lL]ew[li]s\b", "Oscar Lewis"),
+    (r"\b[ıIİi1][lL]ew[li]s\b", "Lewis"),
+    (r"\böldüSünde\b", "öldüğünde"),
+    (r"\bbaS\b", "bağ"),
+    (r"\bteşekkOr\b", "teşekkür"),
+    (r"\bÇOnkü\b", "Çünkü"),
+    (r"\bçOnkü\b", "çünkü"),
+    (r"\b[lL][1ıli]{2}tin\b", "Latin"),
+    (r"\b[lıhI][1ıli]{1,3}nois\b", "Illinois"),
+    (r"\bb['’]otçluyum\b", "borçluyum"),
+    (r"\bpro\s*tok['’]?olleri\b", "protokolleri"),
+    (r"\bçBzümleme[^\s]*\b", "çözümlemeler"),
+    (r"\byardıiııci\b", "yardımcı"),
+    (r"\boldu(?:ouiçin|ॗuiçin|u\s*için)\b", "olduğu için"),
+    (r"\bte\s*şekkür\b", "teşekkür"),
+    (r"\bTe['’]st\b", "Test"),
+    (r"\bAy['’]nı\b", "Aynı"),
+    (r"\bMek['’]sika\b", "Meksika"),
+    (r"\bMek['’]sika'", "Meksika'"),
+    (r"\bÇocukla['’]rı['’]nda\b", "Çocukları'nda"),
+    (r"\banlayıx\b", "anlayış"),
+    (r"\b([a-zçğıöşü]+)[ıi]x\b", r"\1ış"),
+    (r"\bCQCUKLARI\b", "ÇOCUKLARI"),
+    (r"\bCQCUK\b", "ÇOCUK"),
+    (r"\bSANCEZ\b", "SANÇEZ"),
+    (r"\banlcıtılan\b", "anlatılan"),
+    (r"\bdavrcınışla\b", "davranışla"),
+    (r"\bde-?\s*vcım\b", "devam"),
+    (r"\bdcı\b", "da"),
+    (r"\bVecindacl\b", "Vecindad"),
+    (r"\blııaldeki\b", "haldeki"),
+    (r"\bhIaldeki\b", "haldeki"),
+    (r"\bU\s+lan\b", "Ulan"),
+    (r"\bEllt\s+altı\b", "Elli altı"),
+    (r"\byuzu\s+gozu\b", "yüzü gözü"),
+
+    # Stray apostrophes splitting common lowercase words (birey'cilik -> bireycilik, şük'ran -> şükran)
+    (r"\b([a-zçğıöşü]{2,})['’]([a-zçğıöşü]{2,})\b", r"\1\2"),
 
     # Turkish InDesign / publisher font corruption & glyph mapping fixes
     (r"['\"‘“]?\u0110([a-zçğıöşüA-ZÇĞİÖŞÜ])", r'"A\1'),   # 'Đdı -> "Adı, 'Đnladık -> "Anladık
@@ -82,7 +156,7 @@ OCR_REPLACEMENTS = [
     (r"[\u201C\u201D\u201E\u201F]", '"'),
     (r"[\u2013\u2014\u2015]", "—"),            # en-dash, em-dash, horizontal bar -> em-dash
 
-    # OCR misread quotation marks (closing quotes read as '2)', '9)', '?)'; opening quotes as '((', 'K(', '(C'', 'c')
+    # OCR misread quotation marks
     (r"[,;:\.]*\s*[29]\)\s*(?=(?:dedi|diye|demi|sordu|fısıldadı|mırıldandı)\b)", '," '),
     (r"[\.;:\'\*\_]+\s*[29]\)\s*(?=[A-ZÇĞİÖŞÜ])", '." '),
     (r"([a-zçğıöşü])\s*[29]\)\s*(?=[A-ZÇĞİÖŞÜ])", r'\1." '),
@@ -128,6 +202,8 @@ KNOWN_WORD_SPLITS = [
     (r"\bZ\s*[VÜüUu]\s*R\s*[İIıi]\s*H\b", "ZÜRİH"),
     (r"\bZAMAN\s*1\b", "ZAMANI"),
     (r"\bAYYILDIZLl\b", "AYYILDIZLI"),
+    (r"\bCONSUE\s+LO\b", "CONSUELO"),
+    (r"\bConsue\s+lo\b", "Consuelo"),
 ]
 
 # Patterns for compound hyphenated words that should PRESERVE hyphens
@@ -143,17 +219,55 @@ class TextCleaner:
         self.repeated_headers: Set[str] = set()
 
     def normalize_unicode(self, text: str) -> str:
-        """Normalizes Unicode characters into standard NFC form and fixes decomposed diacritics."""
+        """Normalizes Unicode characters into standard NFC form and fixes decomposed diacritics & non-Latin OCR glyphs."""
         if not text:
             return ""
-        # NFC normalizes combining accents like s + ¸ into ş
+        # 1. Map specific OCR glyph corruptions from exotic scripts to Turkish characters
+        text = text.replace("\u0957", "ğ")  # Devanagari gravity mark used as ğ (olduॗu -> olduğu)
+        text = re.sub(r"[\u0A00-\u0A7F]", "Ğ", text)  # Gurmukhi letters used for Ğ (ÇOCUKLUਲ਼UM -> ÇOCUKLUĞUM)
+
+        # 2. Strip exotic non-Latin noise characters
+        text = re.sub(r"[\u0900-\u097F\u0530-\u058F\u1200-\u137F\u0250-\u02AF\u036E\u036F]", "", text)
+
+        # 3. NFC normalizes combining accents like s + ¸ into ş
         text = unicodedata.normalize("NFC", text)
         return text
 
     def clean_ocr_errors(self, text: str) -> str:
-        """Fixes common OCR recognition artifacts and ligatures."""
+        """Fixes common OCR recognition artifacts, ligatures, and Turkish vowel harmony distortions."""
         for pattern, replacement in OCR_REPLACEMENTS:
             text = re.sub(pattern, replacement, text)
+
+        # Capital 'O' in lowercase words (Turkish vowel harmony correction)
+        # e.g., 'teşekkOr' -> 'teşekkür', 'ÇOnkü' -> 'Çünkü', 'sOrer' -> 'sürer', 'mahkOm' -> 'mahkûm'
+        def fix_capital_o(m):
+            word = m.group(0)
+            idx = word.find("O")
+            before = word[:idx]
+            front_vowels = set("eiöüEİÖÜ")
+            has_front = any(c in front_vowels for c in before)
+            if word.lower().startswith("mahk"):
+                rep = "û"
+            elif word.lower().startswith("hük"):
+                rep = "ü"
+            else:
+                rep = "ü" if has_front else "u"
+            return word.replace("O", rep)
+
+        text = re.sub(r"\b[a-zçğıöşüA-ZÇĞİÖŞÜ]+O[a-zçğıöşü]+\b", fix_capital_o, text)
+
+        # Comma misread as period in non-sentence lists / sequences
+        # e.g., 'şiddet. ölüm, acı çekme' -> 'şiddet, ölüm, acı çekme'
+        def fix_period_as_comma(m):
+            w1 = m.group(1)
+            w2 = m.group(2)
+            if w1.lower() in TURKISH_ABBREVIATIONS:
+                return m.group(0)
+            # If followed by lowercase word without verb/sentence break
+            return f"{w1}, {w2}"
+
+        text = re.sub(r"\b([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]{2,})\.\s+([a-zçğıöşü]{3,})\b", fix_period_as_comma, text)
+
         return text
 
     def heal_split_words(self, text: str) -> str:
@@ -168,8 +282,8 @@ class TextCleaner:
         text = re.sub(r"(?<=[a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])[ \t]*['’][ \t]*([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)", r"'\1", text)
         text = re.sub(r"\b(['’])[ \t]*([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)", r"\1\2", text)
 
-        # Step 1: Broken hyphen with spaces around it: e.g. 'son - raki' -> 'sonraki'
-        text = re.sub(r"(?<=[a-zçğıöşüA-ZÇĞİÖŞÜ])[ \t]*[-–—\xad][ \t]+([a-zçğıöşüA-ZÇĞİÖŞÜ]+)", r"\1", text)
+        # Step 1: Broken hyphen with spaces around it: e.g. 'son - raki' -> 'sonraki', 'baş · ladım' -> 'başladım'
+        text = re.sub(r"(?<=[a-zçğıöşüA-ZÇĞİÖŞÜ])[ \t]*[-–—\xad·•][ \t]+([a-zçğıöşüA-ZÇĞİÖŞÜ]+)", r"\1", text)
 
         # Step 2: Specific known splits
         for pattern, rep in KNOWN_WORD_SPLITS:
@@ -207,26 +321,38 @@ class TextCleaner:
         return text
 
     def is_likely_page_number(self, line: str) -> bool:
-        """Determines if a single line is just a page number (e.g. '14', '- 25 -', '[ 42 ]', '139_')."""
+        """Determines if a single line is just a page number (e.g. '14', '- 25 -', '[ 42 ]', 'vuı ·', 'Vll', 'xı', 'x')."""
         s = line.strip()
         if not s:
             return False
         # Matches numbers with optional dashes, underscores, dots, or brackets
         if re.match(r"^[-–—_=\*•~·\[\(\s]*\d{1,4}[-–—_=\*•~·\]\)\.\s]*$", s):
             return True
-        # Roman numerals e.g. 'iv', 'VII'
-        if re.match(r"^[ivxlcdmIVXLCDM]{1,6}$", s):
+        # Roman numerals e.g. 'iv', 'VII', 'Vll', 'IX', 'x', 'xı', 'vuı ·'
+        # Normalizes Turkish dotless ı -> i, lowercase l / 1 -> i, strips middle dots & ornaments
+        s_roman = s.lower().replace("·", "").replace("•", "").replace("ı", "i").replace("l", "i").replace("1", "i").replace(" ", "").replace("-", "")
+        if re.match(r"^[ivxcdm]+$", s_roman) and 1 <= len(s_roman) <= 8:
             return True
         return False
 
     def is_likely_header_footer(self, line: str, book_title: Optional[str] = None, author: Optional[str] = None) -> bool:
         """Determines if a line is a running header or footer that shouldn't appear in body text."""
         s = line.strip()
-        if len(s) < 2 or len(s) > 100:
+        if not s or len(s) > 100:
             return False
 
         if self.is_likely_page_number(s):
             return True
+
+        # Footer lines like author signature or author + roman numeral at page bottom e.g. 'Oscar Lewis vuı ·'
+        if author:
+            auth_lower = turkish_lower(author).strip()
+            s_lower_raw = turkish_lower(s).strip()
+            if auth_lower and auth_lower in s_lower_raw and len(s_lower_raw) <= len(auth_lower) + 12:
+                # If followed by roman numeral or dot
+                rem = s_lower_raw.replace(auth_lower, "").strip()
+                if not rem or self.is_likely_page_number(rem):
+                    return True
 
         s_lower = turkish_lower(s)
         s_clean = re.sub(r"[^\w\s]", "", s_lower).strip()
@@ -241,10 +367,12 @@ class TextCleaner:
             if auth_clean and auth_clean in s_clean and len(s_clean) < len(auth_clean) + 15:
                 return True
 
+        return False
+
     def is_likely_garbage_line(self, line: str) -> bool:
         """
-        Detects OCR noise lines typically caused by illustrations, diagrams, or decorative graphics
-        (e.g. ')).• c •., ;; :. >l\'., , ☐- Ò -; ·J/ /.; ___-', 'QR\\S. ,.;- \"\" -.:3\'', '— -..: CĈ').
+        Detects OCR noise lines typically caused by illustrations, diagrams, publisher imprint noise,
+        or decorative graphics (e.g. '!A\x06\x07i vıc: ni:: eyayınlarıiB.....tb', 'QR\\S. ,.;- \"\" -.:3\'').
         """
         s = line.strip()
         if not s:
@@ -260,8 +388,12 @@ class TextCleaner:
         if re.match(r"^[\s§\*•~♦—\-_=\'\"]{1,10}$", s):
             return True
 
-        # Standalone single letters on their own line (e.g. stray 'k', 'l')
+        # Standalone single letters on their own line (e.g. stray 'k', 'l', 'v')
         if len(s) == 1 and not s.isdigit():
+            return True
+
+        # Publisher imprint scanned noise lines e.g. '!A\x06\x07i', 'vıc: ni:: eyayınlarıiB'
+        if re.match(r"^[\!A-Za-z0-9\s]{0,5}[\x00-\x1f]", s):
             return True
 
         letters = re.findall(r"[a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]", s)
@@ -272,10 +404,8 @@ class TextCleaner:
             return True
 
         # 2. Extreme symbol ratio (symbols / punctuation far outweighing letters)
-        # Often occurs when OCR scans drawings, banners, or ornaments
         ratio = len(letters) / total_len
         if total_len >= 3 and ratio < 0.40:
-            # Check for characteristic OCR noise patterns (slashes, repeated punctuation, underscores)
             if re.search(r"[\\/_;:,\.]{2,}|[\\/]|--\.\.|:\s*[A-Z]", s) or len(letters) <= 2:
                 return True
 
@@ -283,7 +413,7 @@ class TextCleaner:
         if total_len <= 15 and len(letters) <= 2 and re.search(r"[-–—_=\\/\.:;,\'\"!§\*~]", s):
             return True
 
-        # 4. Stray OCR consonant codes / words with no vowels (e.g. 'DVrTV', 'D VrTV -')
+        # 4. Stray OCR consonant codes / words with no vowels
         has_vowel = bool(re.search(r"[aeıioöuüAEIİOÖUÜ]", s))
         if not has_vowel and len(letters) >= 3 and not (s.isupper() and len(letters) <= 4):
             return True
@@ -292,8 +422,8 @@ class TextCleaner:
 
     def dehyphenate(self, text: str) -> str:
         """
-        Reconstructs words broken across line wraps by a hyphen or soft-hyphen (\xad).
-        Example: 'öğren-\n ciler' -> 'öğrenciler', 'son - raki' -> 'sonraki'
+        Reconstructs words broken across line wraps by a hyphen, soft-hyphen (\xad), or middle dot (·/•).
+        Example: 'öğren-\n ciler' -> 'öğrenciler', 'baş·\n ladım' -> 'başladım', 'son - raki' -> 'sonraki'
         Preserves true compound words like 'Türk-\n İslam' -> 'Türk-İslam'
         """
         def merge_hyphen(match):
@@ -311,12 +441,12 @@ class TextCleaner:
             # Normal word broken across line: merge without hyphen
             return f"{word1}{word2}"
 
-        # Match word ending with hyphen or soft-hyphen across newline
-        pattern_nl = r"([a-zçğıöşüA-ZÇĞİÖŞÜ]+)\s*[-–—\xad]\s*\n\s*([a-zçğıöşüA-ZÇĞİÖŞÜ]+)"
+        # Match word ending with hyphen, soft-hyphen, or middle dot across newline
+        pattern_nl = r"([a-zçğıöşüA-ZÇĞİÖŞÜ]+)\s*[-–—\xad·•]\s*\n\s*([a-zçğıöşüA-ZÇĞİÖŞÜ]+)"
         text = re.sub(pattern_nl, merge_hyphen, text)
 
-        # Match word ending with hyphen or soft-hyphen across any whitespace (e.g. 'son - raki')
-        pattern_ws = r"([a-zçğıöşüA-ZÇĞİÖŞÜ]+)\s*[-–—\xad]\s+([a-zçğıöşüA-ZÇĞİÖŞÜ]+)"
+        # Match word ending with hyphen, soft-hyphen, or middle dot across any whitespace
+        pattern_ws = r"([a-zçğıöşüA-ZÇĞİÖŞÜ]+)\s*[-–—\xad·•]\s+([a-zçğıöşüA-ZÇĞİÖŞÜ]+)"
         text = re.sub(pattern_ws, merge_hyphen, text)
 
         # Remove any lingering standalone soft hyphens
@@ -364,17 +494,12 @@ class TextCleaner:
                 if current_p:
                     paragraphs.append(" ".join(current_p))
                     current_p = []
-                # Clean any ornament dashes inside or around heading (e.g. '------ ZAMAN' -> 'ZAMAN')
+                # Clean any ornament dashes inside or around heading
                 clean_heading = re.sub(r"[-–—_]{2,}", " ", stripped)
                 clean_heading = re.sub(r"\s+", " ", clean_heading).strip()
                 if not clean_heading:
                     continue
 
-                # If previous paragraph was also a short standalone heading, merge them:
-                # e.g. 'ELVEDA' + 'VATANIM' -> 'ELVEDA VATANIM'
-                # e.g. 'YİNE' + 'HASRET' -> 'YİNE HASRET'
-                # e.g. 'ZÜRİH'TE' + 'ZAMAN' -> 'ZÜRİH'TE ZAMAN'
-                # Do NOT merge if either line contains numbers or commas (e.g. 'MART 1933, FRANKFURT')
                 can_merge = (
                     paragraphs and
                     len(paragraphs[-1]) <= 35 and

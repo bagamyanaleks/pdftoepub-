@@ -50,3 +50,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
 
 # Start Web UI
 CMD ["python", "web_ui.py", "--host", "0.0.0.0", "--port", "8000", "--no-browser"]
+
