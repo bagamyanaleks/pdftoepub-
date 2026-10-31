@@ -30,6 +30,21 @@ TURKISH_ABBREVIATIONS = {
 }
 
 
+# Publisher font encoding mapping for corrupted Ethiopic glyphs (\u12e3 to \u130d)
+# Legacy publishing software mapped Turkish/Latin letters to Ethiopic Unicode codepoints
+ETHIOPIC_PDF_CHAR_MAP = {
+    '\u12e3': 'ı', '\u12e4': 'e', '\u12e5': 't', '\u12e6': 'm', '\u12e7': 'ğ', '\u12e8': 'e',
+    '\u12e9': "'", '\u12ea': 'r', '\u12eb': 'k', '\u12ec': 'e', '\u12ed': 'r', '\u12ee': 'y',
+    '\u12ef': 'r', '\u12f0': 'ğ', '\u12f1': 'd', '\u12f2': 's', '\u12f3': 'n', '\u12f4': 'i',
+    '\u12f5': 'a', '\u12f6': 'u', '\u12f7': 't', '\u12f8': 'e', '\u12f9': 'e', '\u12fa': 'e',
+    '\u12fb': 'ş', '\u12fc': 's', '\u12fd': 'm', '\u12fe': 'r', '\u12ff': 'nd', '\u1300': 'z',
+    '\u1301': 'ğil', '\u1302': 'r', '\u1303': ',"', '\u1304': 'ü', '\u1305': 'z', '\u1306': 'k',
+    '\u1307': 'k', '\u1308': 't', '\u1309': 'a', '\u130a': 'a', '\u130b': 'y', '\u130c': 'k',
+    '\u130d': 'e'
+}
+
+
+
 # Common Turkish OCR misrecognitions
 OCR_REPLACEMENTS = [
     # Ligatures
@@ -347,6 +362,58 @@ OCR_REPLACEMENTS = [
     (r"\boralf\!rın\b", "oraların"),
     (r"\bl\!Zatmayalım\b", "uzatmayalım"),
 
+    # Manuel section and related vocabulary repairs
+    (r"\b(\d+|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on)\s+peao\b", r"\1 peso"),
+    (r"\bpeao\b", "peso"),
+    (r"\bHaHamtlan\s+blle\b", "babamdan bile"),
+    (r"\bHaHamtlan\b", "babamdan"),
+    (r"\bblle\b", "bile"),
+    (r'["«“]?iyi,\s*demek\s+istediğ[a-zçğıöşüA-ZÇĞİÖŞÜ]{2,4}\s+eriştin\s+sonunda\s+hai[\'’\"”»« \t]*', '"İyi, demek istediğine eriştin sonunda ha!"'),
+    (r"\bistediğ[a-zçğıöşüA-ZÇĞİÖŞÜ]{2,4}\b(?=\s+eriştin\b)", "istediğine"),
+    (r"\bhai['’]", 'ha!'),
+    (r"\bbenonu\b", "ben onu"),
+    (r"\bitef[ıi]yordum\b", "itiyordum"),
+    (r'[«\"“]?l:\s*çar[ıi]\s*gi[iıጂr\s]+n[\.ጃ,\s]*[\"”\'»]?\s*(?=dedi\b)', '"İçeri girin," '),
+    (r'\bl:\s*çar[ıi]\s*gi[iıጂr\s]+n\b', "İçeri girin"),
+    (r'\bYCizü[\"”\']?', "Yüzü"),
+    (r'\bYüzü:\s*(?=bir\b)', "Yüzü "),
+    (r'(?<=[\.\?!])\s*O:\s*[hH1ıil]?[ıi1]?asan[ıim]+\b', " O masanın"),
+    (r'[·•\s]*O:\s*[hH1ıil]?[ıi1]?asan[ıim]+\b', "O masanın"),
+    (r'\bkarşısıha\b', "karşısına"),
+    (r'\b[fF]llç\s+kurusu\b', "Piç kurusu"),
+    (r'\b[pP]l[ıi1ç]\s+kurusu\b', "Piç kurusu"),
+    (r'\bevle[ıi1n]+ttin\b', "evlendin"),
+    (r'ha\s*[?]*[>]+[)]*', 'ha?"'),
+    (r"\bo\s*sıralardabir\b", "o sıralarda bir"),
+    (r"\b(?:cl|d)M['’]andero['’]?[yY]a\b", "curandero'ya"),
+    (r"\bcurandero['’][yY]a\b", "curandero'ya"),
+    (r"\bcuranderoya\b", "curandero'ya"),
+    (r'["«“]?Bu\s+cabrona,?\s*[ıi1]?>?[\"”\']?\s*(?=dedi\b)', '"Bu cabrona," '),
+    (r'\bcabrona,\s*[ıi1]?>?[\"”\']?', 'cabrona,"'),
+    (r'\bcabroma\b', "cabrona"),
+    (r'\bya[alጆ]{1,3}ad[ıi]\b', "yakaladı"),
+    (r'\bgücO\b', "gücü"),
+    (r'\bb[Uuü]y[Ooö]\b', "büyü"),
+    (r'\bb[Uuü]y[Ooö]ledi\b', "büyüledi"),
+    (r'\bgôzleri\b', "gözleri"),
+    (r'\byed[l1]ği\b', "yediği"),
+    (r"\bye['’]dl-", "yediği"),
+    (r'\bb[ôö]ttin\b', "bütün"),
+    (r'\bgüvenleııfni\b', "güvenlerini"),
+    (r'\bü\s+stünde\b', "üstünde"),
+    (r'\bGEN\s+altı\b', "Elli altı"),
+    (r'\bN\s+erede\b', "Nerede"),
+    (r'\bsan\s+çıkarıyorsun\b', "sen çıkarıyorsun"),
+    (r'\bl:iurada\b', "burada"),
+    (r'\by["\']oksuldu\b', "yoksuldu"),
+    (r'[\.,]\s*[\"”\']?\s*ce[\\/]?l\.*abını\s+verdim', '," cevabını verdim'),
+    (r'\bce[\\/]?l\.*abını\b', 'cevabını'),
+    (r'\bcmachete\b', "machete"),
+    (r'[\"«“]?machete[\"»”]?[ \t]*c[·•\s*]>', '"machete" (*)'),
+    (r'c[·•\s*]>', '(*)'),
+    (r'\bTa\.hra\b', "Tahra"),
+    (r'\bya\s+dıı\.\b', "ya da,"),
+
     # Underscores at start or end of words
     (r"(?<=\s)_([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)", r"\1"),
     (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)_(?=[\s\.,;:\?!]|$)", r"\1"),
@@ -429,7 +496,11 @@ class TextCleaner:
         """Normalizes Unicode characters into standard NFC form and fixes decomposed diacritics & non-Latin OCR glyphs."""
         if not text:
             return ""
-        # 1. Map specific OCR glyph corruptions from exotic scripts to Turkish characters
+        # 1. Map publisher font encoding flaws where Latin characters were mapped to Ethiopic Unicode codepoints (\u12e3-\u130d)
+        for char, rep in ETHIOPIC_PDF_CHAR_MAP.items():
+            text = text.replace(char, rep)
+
+        # Map specific OCR glyph corruptions from exotic scripts to Turkish characters
         text = text.replace("\u0957", "ğ")  # Devanagari gravity mark used as ğ (olduॗu -> olduğu)
         text = re.sub(r"[\u0A00-\u0A7F]", "Ğ", text)  # Gurmukhi letters used for Ğ (ÇOCUKLUਲ਼UM -> ÇOCUKLUĞUM)
 
@@ -643,6 +714,10 @@ class TextCleaner:
         if len(s) == 1 and not s.isdigit():
             return True
 
+        # Illustration captions / image indicator labels (e.g. 'Görsel', 'Resim', 'Şekil')
+        if s.lower() in ("görsel", "resim", "şekil", "fotoğraf"):
+            return True
+
         # Publisher imprint scanned noise lines e.g. '!A\x06\x07i', 'vıc: ni:: eyayınlarıiB'
         if re.match(r"^[\!A-Za-z0-9\s]{0,5}[\x00-\x1f]", s):
             return True
@@ -776,7 +851,7 @@ class TextCleaner:
                 ends_with_terminal = bool(re.search(r"[\.!\?…\"”']$", prev_text))
                 is_dialogue_start = stripped.startswith('"') or stripped.startswith('“') or stripped.startswith("—") or stripped.startswith("- ")
                 
-                if (ends_with_terminal or prev_upper) and (stripped[0].isupper() or stripped[0].isdigit() or is_dialogue_start):
+                if (ends_with_terminal or prev_upper or is_dialogue_start) and (stripped[0].isupper() or stripped[0].isdigit() or is_dialogue_start):
                     # Likely new paragraph
                     paragraphs.append(" ".join(current_p))
                     current_p = [stripped]

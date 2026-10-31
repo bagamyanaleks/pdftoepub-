@@ -79,6 +79,55 @@ class TestOCRRepairs(unittest.TestCase):
         self.assertIn("boşaltıyorduk. Uzun", cleaned)
         self.assertIn("yatabilirdi. Şilteyi", cleaned)
 
+    def test_manuel_section_corruptions(self):
+        sample = (
+            'Böylece evlilik hayatımız başladı. Kira ödemiyorduk, yine de karıma yiyecek için günde beş peao veriyordum. '
+            'Teyzem çok iyi bir insandı ama hep yoksuldu, hatta anamla HaHamtlan blle yoksul. '
+            'Çamaşır yıkıyor, lokantada yamaklık ediyordu, eniştem de gazete satıyordu ama yine de aralarında topladıkları parayla ancak günde bir öğün yemek yiyebiliyorlardı\n'
+            '"iyi, demek istediğföe eriştin sonunda hai\'"\n'
+            'Babam kapıyı açtığı zaman benonu arkasından itefıyordum.\n\n'
+            '"l: çari giin, dedi. YCizü" bir yargıcınki gibiydi, kendimi jürinin karşısında hissettim. \n'
+            'O: hıasanm bir yanına, biz karşısıha oturduk. "fllç kurusu, demek evleınttin ha?>)\n\n'
+            'Görsel\n'
+            '"Şey, evet baba."\n'
+            'Dayım hep karısının kendisine büyü yaptığından yakınıyordu, üstündeki kötülükleri kovmak için de o sıralardabir dM\'andero\'Ya gidiyordu. '
+            '"Bu cabrona, i" dedi. "Beni yaaladı ve bırakmıyor, ihtiyar cadı. Ne zaman eve gitsem hep işi gücO otlar ve boktan büyücülük işleri. '
+            'Beni de büyüledi. Bundan nasıl kurtulacağımı bilemiyorum." Dayım karısının kendisine bUyO yaptığını söylediği halde kadıncağızın vücudu ve gôzleri hep yedlği dayaklardan çürük içindeydi.\n'
+            '"Evet efendim, hazırım." ce\\l.abını verdim. Bütün eşyam, içinde giysilerimin durduğu ufak bir kutuydu. Daha önce hiç bir yeri görmediğim için Mexico City\'ye gitmeyi çok istiyordum.\n'
+            'Genellikle de bir cmachete" c·> ve bir halat alır, kuru odun toplamaya giderdim.'
+        )
+        cleaned = self.cleaner.process_full_text(sample)
+
+        self.assertIn("beş peso", cleaned)
+        self.assertIn("babamdan bile", cleaned)
+        self.assertIn('"İyi, demek istediğine eriştin sonunda ha!"', cleaned)
+        self.assertIn("ben onu arkasından itiyordum.", cleaned)
+        self.assertIn('"İçeri girin," dedi.', cleaned)
+        self.assertIn("Yüzü bir yargıcınki gibiydi", cleaned)
+        self.assertIn("O masanın bir yanına, biz karşısına oturduk.", cleaned)
+        self.assertIn('"Piç kurusu, demek evlendin ha?"', cleaned)
+        self.assertNotIn("Görsel", cleaned)
+        self.assertIn('"Şey, evet baba."', cleaned)
+        self.assertIn("o sıralarda bir curandero'ya gidiyordu", cleaned)
+        self.assertIn('"Bu cabrona," dedi.', cleaned)
+        self.assertIn('"Beni yakaladı ve bırakmıyor, ihtiyar cadı.', cleaned)
+        self.assertIn("işi gücü otlar", cleaned)
+        self.assertIn("büyü yaptığını söylediği", cleaned)
+        self.assertIn("gözleri hep yediği dayaklardan", cleaned)
+        self.assertIn('"Evet efendim, hazırım," cevabını verdim.', cleaned)
+        self.assertIn('"machete" (*)', cleaned)
+
+    def test_ethiopic_unicode_font_healing(self):
+        raw = "Bunun nedeni de\u1301di, di\u1305lerine ula\u12fb\u12e5\u12e3, ya\u1306alad\u12e3, \xe7\u1304nkü gi\u1302in\u1303 dedi."
+        cleaned = self.cleaner.normalize_unicode(raw)
+        self.assertIn("değildi", cleaned)
+        self.assertIn("dizlerine", cleaned)
+        self.assertIn("ulaştı", cleaned)
+        self.assertIn("yakaladı", cleaned)
+        self.assertIn("çünkü", cleaned)
+        self.assertIn('girin,"', cleaned)
+
 
 if __name__ == "__main__":
     unittest.main()
+
