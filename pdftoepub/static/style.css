@@ -104,6 +104,12 @@ body {
     border-color: #1a4d3a;
 }
 
+.badge-tess {
+    background: #172554;
+    color: #60a5fa;
+    border-color: #1e40af;
+}
+
 .badge-local {
     background: #1e1e38;
     color: #a5b4fc;

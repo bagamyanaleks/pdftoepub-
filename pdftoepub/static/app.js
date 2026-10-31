@@ -17,6 +17,17 @@ async function loadSystemStatus() {
         const res = await fetch('/api/system-status');
         const data = await res.json();
         
+        // Tesseract Badge
+        const tessBadge = document.getElementById('tess-badge');
+        const tessLabel = document.getElementById('tess-label');
+        if (data.tesseract_available) {
+            tessLabel.textContent = 'Tesseract 5 (LSTM Hazır)';
+        } else {
+            tessBadge.style.opacity = '0.5';
+            tessLabel.textContent = 'Tesseract Yok (EasyOCR Aktif)';
+        }
+
+        // GPU Badge
         const gpuLabel = document.getElementById('gpu-label');
         if (data.cuda_available) {
             gpuLabel.textContent = `${data.device_name} (CUDA Aktif)`;
@@ -160,6 +171,7 @@ function clearSelectedFile(e) {
 
 // Start Conversion Process
 async function startConversion() {
+    const ocrEngine = document.getElementById('ocr-engine').value;
     const ocrMode = document.getElementById('ocr-mode').value;
     const title = document.getElementById('book-title').value.trim() || null;
     const author = document.getElementById('book-author').value.trim() || null;
@@ -174,6 +186,7 @@ async function startConversion() {
 
         const formData = new FormData();
         formData.append('file', selectedFile);
+        formData.append('ocr_engine', ocrEngine);
         formData.append('ocr_mode', ocrMode);
         if (title) formData.append('title', title);
         if (author) formData.append('author', author);
@@ -197,6 +210,7 @@ async function startConversion() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 filename: selectedWorkspaceFile,
+                ocr_engine: ocrEngine,
                 ocr_mode: ocrMode,
                 title: title,
                 author: author

@@ -30,6 +30,10 @@
 
             <!-- Hardware Badges -->
             <div class="status-badges">
+                <div class="badge badge-tess" id="tess-badge">
+                    <span class="indicator pulse"></span>
+                    <span class="badge-label" id="tess-label">Tesseract 5 (LSTM Aktif)</span>
+                </div>
                 <div class="badge badge-gpu" id="gpu-badge">
                     <span class="indicator pulse"></span>
                     <span class="badge-label" id="gpu-label">NVIDIA RTX 3050 (CUDA Aktif)</span>
@@ -103,14 +107,23 @@
                 <div class="conversion-options">
                     <h4 class="section-title">Dönüştürme Ayarları</h4>
                     
-                    <div class="form-group">
-                        <label for="ocr-mode">OCR Stratejisi</label>
-                        <select id="ocr-mode" class="custom-select">
-                            <option value="auto" selected>Akıllı Otomatik (Önerilen - Yalnızca Gerektiğinde)</option>
-                            <option value="force">Zorunlu GPU OCR (Tüm Sayfaları Tara)</option>
-                            <option value="none">OCR Yapma (Yalnızca Mevcut Vektörel Metni Al)</option>
-                        </select>
-                        <small class="field-help">Akıllı mod, taranmış sayfaları GPU ile okur; temiz metinleri anında kayıpsız aktarır.</small>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ocr-engine">OCR Motoru</label>
+                            <select id="ocr-engine" class="custom-select">
+                                <option value="auto" selected>Akıllı Otomatik (Tesseract 5 Öncelikli)</option>
+                                <option value="tesseract">Tesseract 5 (En Yüksek Türkçe Doğruluk)</option>
+                                <option value="easyocr">EasyOCR (PyTorch GPU CUDA)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="ocr-mode">Tarama Kapsamı</label>
+                            <select id="ocr-mode" class="custom-select">
+                                <option value="auto" selected>Akıllı Otomatik (Yalnızca Gerektiğinde)</option>
+                                <option value="force">Tüm Sayfaları OCR'dan Geçir</option>
+                                <option value="none">OCR Yapma (Yalnızca Vektör Metin)</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="form-row">

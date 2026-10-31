@@ -1,4 +1,5 @@
 import unittest
+import os
 import fitz
 from pdftoepub.analyzer import extract_geometric_page_text
 from pdftoepub.structure import StructureDetector
@@ -6,7 +7,10 @@ from pdftoepub.cleaner import TextCleaner
 
 class TestGeometricExtractionAndTOC(unittest.TestCase):
     def setUp(self):
-        self.doc = fitz.open("Ayşe Kulin Kanadı Kırık Kuşlar Everest Yayınları (2).pdf")
+        pdf_name = "Ayşe Kulin Kanadı Kırık Kuşlar Everest Yayınları (2).pdf"
+        if not os.path.exists(pdf_name):
+            self.skipTest(f"Test PDF not present: {pdf_name}")
+        self.doc = fitz.open(pdf_name)
         self.detector = StructureDetector()
         self.cleaner = TextCleaner()
 

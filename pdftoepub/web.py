@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .pipeline import ConversionPipeline
+from .ocr import is_tesseract_available, find_tesseract_binary
 
 
 app = FastAPI(title="PDF to EPUB & AZW3 Studio", version="1.0.0")
@@ -35,6 +36,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 class ConvertExistingRequest(BaseModel):
     filename: str
     ocr_mode: str = "auto"
+    ocr_engine: str = "auto"
     title: Optional[str] = None
     author: Optional[str] = None
 
@@ -61,9 +63,14 @@ def get_cached_system_status() -> Dict[str, Any]:
             cuda_avail = torch.cuda.is_available()
             device_name = torch.cuda.get_device_name(0) if cuda_avail else "CPU"
             azw_conv = AZW3Converter()
+            tess_avail = is_tesseract_available()
+            tess_path = find_tesseract_binary()
+
             _SYSTEM_STATUS = {
                 "cuda_available": cuda_avail,
                 "device_name": device_name,
+                "tesseract_available": tess_avail,
+                "tesseract_path": tess_path,
                 "calibre_available": azw_conv.is_available,
                 "calibre_path": azw_conv.calibre_exe
             }
@@ -71,6 +78,8 @@ def get_cached_system_status() -> Dict[str, Any]:
             _SYSTEM_STATUS = {
                 "cuda_available": False,
                 "device_name": "CPU",
+                "tesseract_available": False,
+                "tesseract_path": None,
                 "calibre_available": False,
                 "calibre_path": None
             }
@@ -99,15 +108,22 @@ async def list_workspace_pdfs():
     return {"pdfs": pdf_files}
 
 
-def run_conversion_job(job_id: str, pdf_path: str, ocr_mode: str, title: Optional[str], author: Optional[str]):
+def run_conversion_job(
+    job_id: str,
+    pdf_path: str,
+    ocr_mode: str,
+    ocr_engine: str,
+    title: Optional[str],
+    author: Optional[str]
+):
     filename = jobs.get(job_id, {}).get("filename", os.path.basename(pdf_path))
-    print(f"\n[+] Dönüştürme Başlatıldı: '{filename}' (OCR Modu: {ocr_mode})")
+    print(f"\n[+] Dönüştürme Başlatıldı: '{filename}' (OCR Modu: {ocr_mode}, Motor: {ocr_engine})")
 
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["progress"] = 0.05
     jobs[job_id]["message"] = "Başlatılıyor..."
 
-    pipeline = ConversionPipeline(ocr_mode=ocr_mode)
+    pipeline = ConversionPipeline(ocr_mode=ocr_mode, ocr_engine=ocr_engine)
 
     last_milestone = [-1]
 
@@ -149,6 +165,7 @@ async def convert_uploaded_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     ocr_mode: str = Form("auto"),
+    ocr_engine: str = Form("auto"),
     title: Optional[str] = Form(None),
     author: Optional[str] = Form(None)
 ):
@@ -178,6 +195,7 @@ async def convert_uploaded_file(
         job_id,
         temp_pdf_path,
         ocr_mode,
+        ocr_engine,
         title,
         author
     )
@@ -209,6 +227,7 @@ async def convert_existing_file(
         job_id,
         pdf_path,
         req.ocr_mode,
+        req.ocr_engine,
         req.title,
         req.author
     )

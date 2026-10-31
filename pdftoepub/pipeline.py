@@ -70,10 +70,12 @@ class ConversionPipeline:
     def __init__(
         self,
         ocr_mode: str = "auto",  # "auto", "force", "none"
+        ocr_engine: str = "auto",  # "auto", "tesseract", "easyocr"
         use_gpu: Optional[bool] = None,
         calibre_path: Optional[str] = None
     ):
         self.ocr_mode = ocr_mode
+        self.ocr_engine = ocr_engine
         self.use_gpu = use_gpu
         self.analyzer = PDFAnalyzer()
         self.cleaner = TextCleaner()
@@ -83,7 +85,7 @@ class ConversionPipeline:
 
     def _get_ocr_engine(self) -> OCREngine:
         if self._ocr_engine is None:
-            self._ocr_engine = OCREngine(use_gpu=self.use_gpu)
+            self._ocr_engine = OCREngine(engine=self.ocr_engine, use_gpu=self.use_gpu)
         return self._ocr_engine
 
     def convert(
@@ -205,8 +207,9 @@ class ConversionPipeline:
 
                 page_raw_text = ""
                 if do_ocr:
-                    update_progress(progress_val, f"Sayfa {p_info.page_number}/{total_pages} GPU OCR ile taranıyor...")
                     ocr_engine = self._get_ocr_engine()
+                    eng_label = "Tesseract 5" if ocr_engine.active_engine == "tesseract" else "GPU EasyOCR"
+                    update_progress(progress_val, f"Sayfa {p_info.page_number}/{total_pages} {eng_label} ile taranıyor...")
                     page_raw_text = ocr_engine.ocr_page(page, dpi=300)
                 else:
                     update_progress(progress_val, f"Sayfa {p_info.page_number}/{total_pages} metin ayrıştırılıyor...")
