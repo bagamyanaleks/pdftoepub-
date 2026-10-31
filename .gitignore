@@ -20,6 +20,7 @@ temp/
 tmp/
 
 # OS and Editor files
+scratch/
 .DS_Store
 Thumbs.db
 .vscode/
