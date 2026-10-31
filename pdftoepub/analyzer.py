@@ -67,6 +67,11 @@ def extract_geometric_page_text(page) -> str:
     if current_line:
         lines.append(sorted(current_line, key=lambda x: x[0]))
 
+    COMMON_SHORT_WORDS = {
+        've', 'de', 'da', 'bu', 'şu', 'o', 'en', 'ne', 'ki', 'mi', 'mu', 'mü', 'mı',
+        'ya', 'ile', 'bir', 'için', 'her', 'ama', 'ise', 'hem', 'pek', 'çok'
+    }
+
     line_strings: List[str] = []
     for line_words in lines:
         if not line_words:
@@ -78,15 +83,19 @@ def extract_geometric_page_text(page) -> str:
             w_next = line_words[i + 1]
             gap = w_next[0] - w_curr[2]
 
-            # Inter-letter kerning gap is typically < 3.2 pt in book typesetting.
-            # True inter-word space in 10-12pt book fonts is >= 3.8-8.0 pt.
+            # Inter-letter kerning gap is typically < 2.5 pt in book typesetting.
             is_punct = (
                 w_next[4] in ('.', ',', '!', '?', ';', ':', "'", '"', '’', '”', '-', '—')
                 or cur_token in ("'", '"', '‘', '“', '-', '—')
             )
-            is_fragment = len(cur_token) <= 2 or len(w_next[4]) <= 2
 
-            if gap < 3.2 and (is_fragment or is_punct):
+            cur_is_short = cur_token.lower() in COMMON_SHORT_WORDS
+            next_is_short = w_next[4].lower() in COMMON_SHORT_WORDS
+
+            # Only genuine single-letter font fragments should be glued
+            is_fragment = (not cur_is_short and len(cur_token) == 1) or (not next_is_short and len(w_next[4]) == 1)
+
+            if gap < 2.5 and (is_fragment or is_punct) and not cur_is_short and not next_is_short:
                 cur_token += w_next[4]
             else:
                 reconstructed.append(cur_token)
@@ -153,6 +162,13 @@ class PDFAnalyzer:
             unprintable_count = len(re.findall(r"[\ufffd\x00-\x08\x0b\x0c\x0e-\x1f]", text))
             unprintable_ratio = (unprintable_count / max(char_count, 1))
 
+            # Check for corrupted embedded OCR patterns (e.g. 'başladıQı', 'DarOşşafaka', 'mOdür1üQü', 'Ot\'.\'2DU')
+            corrupt_tokens = re.findall(
+                r"[a-zçğıöşü]+[A-ZÇĞİÖŞÜ0-9][a-zçğıöşü]+|[a-zçğıöşü]+[qwxQWX][a-zçğıöşü]+|[A-Za-zçğıöşüÇĞİÖŞÜ]+['\.\^]+[0-9A-Za-zçğıöşüÇĞİÖŞÜ]+",
+                text
+            )
+            corrupt_token_count = len(corrupt_tokens)
+
             # Classification
             if char_count == 0 and image_count == 0:
                 p_type = PageType.BLANK
@@ -161,8 +177,8 @@ class PDFAnalyzer:
                 # Less than 50 chars, almost certainly a scanned page or illustration
                 p_type = PageType.SCANNED_OCR_REQUIRED
                 ocr_count += 1
-            elif unprintable_ratio >= self.corruption_threshold:
-                # Text layer is corrupted (font cmap issue)
+            elif unprintable_ratio >= self.corruption_threshold or corrupt_token_count >= 3:
+                # Text layer is corrupted (font cmap issue or degraded embedded OCR)
                 p_type = PageType.CORRUPTED_OCR_REQUIRED
                 ocr_count += 1
             else:
