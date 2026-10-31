@@ -220,6 +220,136 @@ OCR_REPLACEMENTS = [
     (r'b\s*\.\s*I["\']\s*arı\.?', 'bari.'),
     (r"\bN\s*e\s*den\s*[\.;>]+", 'Neden?"'),
     (r"\bYusufa\b", "Yusuf'a"),
+
+    # Target paragraph fixes and associated OCR distortions
+    (r"\bt<\![\?ŞşsSl1ıt]{3,8}\.?", "taşıttı."),
+    (r"\bmahallelıırinde\b", "mahallelerinde"),
+    (r"([a-zçğıöşüA-ZÇĞİÖŞÜ]+)lııri([a-zçğıöşü]*)", r"\1leri\2"),
+    (r"\b(?:bir\s+)?süTü\b", "bir sürü"),
+    (r"[«\"“<]{0,2}Vecindadn?dı\b", '"Vecindad"dı'),
+    (r"\bikl\b(?=\s+[a-zçğıöşü]+)", "iki"),
+    (r"\bizlenic\s+mini\b", "izlenimini"),
+    (r"\bçengal([a-zçğıöşü]*)\b", r"çengel\1"),
+    (r"\bEh\.\s*babam\b", "Eh, babam"),
+    (r"\bHem\s*:\s*sonra\b", "Hem sonra"),
+    (r"\bihaneye\s+uğra", "ihanete uğra"),
+
+    # Strip leaked printer sheet forma signatures inside text (e.g. "sançezin çocukları 81/6", "saoçezio ocokları 225/15", "17/2")
+    (r"\b[sSşŞ][a-zA-ZçğıöşüA-ZÇĞİÖŞÜ'’\s]{3,22}\s+\d{1,4}\s*[\/\\]\s*\d{1,3}\b\.?", ""),
+
+    # General 'lıı' OCR distortions across the book
+    (r"\bPaulıı\b", "Paula"),
+    (r"\bNovlıı\b", "Novia"),
+    (r"\balıırak\b", "alarak"),
+    (r"\borı\s+larlıı\b", "onlarla"),
+    (r"\btoplıımaya\b", "toplamaya"),
+    (r"\bonlıırla\b", "onlarla"),
+    (r"\bşarlıı([a-zçğıöşü]*)\b", r"şarkı\1"),
+    (r"\bmutlıı\s*olacak\b", "mutlu olacak"),
+    (r"\b(?:lıııcı|illlcı)\b", "ilacı"),
+    (r"\blıabama\b", "babama"),
+    (r"\bçıkl\!ıırdı\b", "çıkardı"),
+
+    # Publisher font artifacts: capital 'A' for Turkish circumflex 'â'
+    (r"\b(dükk|nik|sil|imk|fedak|rüzg|hik|ihtil|il|tel|şik)A([a-zçğıöşü]*)\b", r"\1â\2"),
+    (r"\bplAtform([a-zçğıöşü]*)\b", r"platform\1"),
+    (r"\bpilAv\b", "pilav"),
+    (r"\bfanilA([a-zçğıöşü]*)\b", r"fanila\1"),
+
+    # Internal uppercase letters in common words
+    (r"\bbatJm\b", "babam"),
+    (r"\btJaha\b", "daha"),
+    (r"\bduyJum\b", "duydum"),
+    (r"\bbütDn\b", "bütün"),
+    (r"\bbüyDk\b", "büyük"),
+    (r"\bkötülDkleri\b", "kötülükleri"),
+    (r"\bkenQlmizi\b", "kendimizi"),
+    (r"\bmahkQm([a-zçğıöşü]*)\b", r"mahkûm\1"),
+    (r"\bşükQr\b", "şükür"),
+    (r"\bhükCımet\b", "hükümet"),
+    (r"\bdeğHdim\b", "değildim"),
+    (r"\buzatabiHyorduk\b", "uzatabiliyorduk"),
+    (r"\bolabiHr\b", "olabilir"),
+    (r"\bgiriŞtim\b", "giriştim"),
+    (r"\bkoŞuyorlardı\b", "koşuyorlardı"),
+    (r"\bhoŞtu\b", "hoştu"),
+    (r"\bgeÇirdi\b", "geçirdi"),
+    (r"\bseYdiğini\b", "sevdiğini"),
+    (r"\btutPrak\b", "tutarak"),
+    (r"\bsöylPrdi\b", "söylerdi"),
+    (r"\bsöylQyordu\b", "söylüyordu"),
+    (r"\bbeklPdik\b", "bekledik"),
+    (r"\bgelmEsine\b", "gelmesine"),
+    (r"\bkirlePir\b", "kirletir"),
+    (r"\byernPği\b", "yemeği"),
+    (r"\bkötüIük([a-zçğıöşü]*)\b", r"kötülük\1"),
+    (r"\b(çocuk|insan|birlik)I([a-zçğıöşü]+)\b", r"\1l\2"),
+
+    # Spanish loan words & quotation normalization
+    (r"\bcc([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:n|nn)?)\b", r'"\1"'),
+    (r"\bccvecindacb>a?", '"vecindad"a '),
+    (r"\bccvecindadJ[\"']?\s*", '"vecindad" '),
+    (r"\bctCompadre[\"']?", '"Compadre"'),
+    (r"\bccAmor\b", '"Amor'),
+    (r"\bccCabronn\b", '"Cabrón"'),
+    (r"\bccPinche\b", '"Pinche'),
+    (r"\bccUlan\b", '"Ulan'),
+
+    # Words split/corrupted with exclamation mark and angle brackets
+    (r"\bi<adar\b", "kadar"),
+    (r"\barı<adaşlarım\b", "arkadaşlarım"),
+    (r"\basr<erle\b", "askerle"),
+    (r"\bbecerebil<irsin\b", "becerebilirsin"),
+    (r"\bb<ıbamı\b", "babamı"),
+    (r"\bduyam<ıdım\b", "duyamadım"),
+    (r"\binandırm<ımız\b", "inandırmamız"),
+    (r"\buzatm<ık\b", "uzatmak"),
+    (r"\bkurtulm<ık\b", "kurtulmak"),
+    (r"\bdış<ırı\b", "dışarı"),
+    (r"\bharel<et\b", "hareket"),
+    (r"\bterl<etmişti\b", "terk etmişti"),
+    (r"\bçıl<armadan\b", "çıkarmadan"),
+    (r"\böfl<ebelirtisi\b", "öfke belirtisi"),
+    (r"\bı<onuşacağını\b", "konuşacağını"),
+    (r"\bl<im\b", "kim"),
+    (r"\bfarJ<lı\b", "farklı"),
+    (r"\byal<aladığı\b", "yakaladığı"),
+    (r"\bAvluc\!a\b", "Avluya"),
+    (r"\bBöy\!ece\b", "Böylece"),
+    (r"\badım\!arımı\b", "adımlarımı"),
+    (r"\bbek\!erken\b", "beklerken"),
+    (r"\bbit\!tin\b", "bittin"),
+    (r"\bbu\!uşrnu\b", "buluşmuş"),
+    (r"\bçal\!ıuk\b", "çabuk"),
+    (r"\bdol\!rusu\b", "doğrusu"),
+    (r"\bdönd\!lğü\b", "döndüğü"),
+    (r"\bekme\!ti\b", "ekmekti"),
+    (r"\bg\!llmezler\b", "gülmezler"),
+    (r"\bh\!lla\b", "hâlâ"),
+    (r"\biç\!erinde\b", "içlerinde"),
+    (r"\bkarşılı\!jında\b", "karşılığında"),
+    (r"\bkavl\!aederdik\b", "kavga ederdik"),
+    (r"\bkaydo\!dum\b", "kaydoldum"),
+    (r"\bkova\!ardı\b", "kovalardı"),
+    (r"\bo\!du\b", "oldu"),
+    (r"\bo\!ılan\b", "oğlan"),
+    (r"\bon\!ar\b", "onlar"),
+    (r"\bşek\!iıde\b", "şekilde"),
+    (r"\bödememi\!sterdi\b", "ödememi isterdi"),
+    (r"\bşi\!ymiş\b", "şeymiş"),
+    (r"\bşiki\!ıyet\b", "şikâyet"),
+    (r"\bya\!an\b", "yalan"),
+    (r"\byer\!erse\b", "yerlerse"),
+    (r"\byatal\!ileceğimizi\b", "yatabileceğimizi"),
+    (r"\bpli\!ınlamayı\b", "planlamayı"),
+    (r"\bKi\!ır\b", "Kâr"),
+    (r"\bda\!Jlar\b", "dağlar"),
+    (r"\boralf\!rın\b", "oraların"),
+    (r"\bl\!Zatmayalım\b", "uzatmayalım"),
+
+    # Underscores at start or end of words
+    (r"(?<=\s)_([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)", r"\1"),
+    (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)_(?=[\s\.,;:\?!]|$)", r"\1"),
     
     # Quotation & punctuation normalization
     (r"[«»]|<<|>>", '"'),                      # Guillemets and double angle brackets -> double quote
@@ -279,6 +409,8 @@ KNOWN_WORD_SPLITS = [
     (r"\bAYYILDIZLl\b", "AYYILDIZLI"),
     (r"\bCONSUE\s+LO\b", "CONSUELO"),
     (r"\bConsue\s+lo\b", "Consuelo"),
+    (r"\bizlenic\s+mini\b", "izlenimini"),
+    (r"\bBir\s*\n\s*Pazar\s+günü\b", "Bir Pazar günü"),
 ]
 
 # Patterns for compound hyphenated words that should PRESERVE hyphens
@@ -358,6 +490,27 @@ class TextCleaner:
 
         text = re.sub(r"\b([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]{3,}),\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})\b", fix_comma_before_capital, text)
 
+        # Repair merged sentence boundaries where a verb is fused with the following capitalized word without a period
+        # e.g., 'boşaltıyordukUzun' -> 'boşaltıyorduk. Uzun', 'yatabilirdiŞilteyi' -> 'yatabilirdi. Şilteyi', 'ediyorlarEh' -> 'ediyorlar. Eh'
+        verb_boundary_pattern = re.compile(
+            r"\b((?:[a-zçğıöşüA-ZÇĞİÖŞÜ]{2,}?(?:"
+            r"yorduk|yordular|yordu|yormuş|yorsunuz|yorsanız|yordum|"
+            r"mıştı|mişti|muştu|müştü|mıştık|miştik|muştuk|müştük|"
+            r"caktır|cektir|maktadır|mektedir|acaktır|ecektir|"
+            r"irdim|erdim|ırdım|urdum|ürdüm|irdi|erdi|ırdı|urdu|ürdü|irdiler|erdiler|"
+            r"dim|dım|dum|düm|tim|tım|tum|tüm|"
+            r"dik|dık|duk|dük|tik|tık|tuk|tük|"
+            r"di|dı|du|dü|ti|tı|tu|tü|"
+            r"iyorlar|ıyorlar|üyorlar|uyorlar|diler|dılar|dular|düler|"
+            r"iyor|ıyor|üyor|uyor|arlar|erler|"
+            r"erse|arsa|mezse|mazsa|miş|mış|muş|müş|"
+            r"erkekti)|doğrusu|tabii|böyle))([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})\b"
+        )
+        text = verb_boundary_pattern.sub(r"\1. \2", text)
+
+        # Collapse any multiple spaces introduced by stripped noise/sluglines
+        text = re.sub(r"[ \t]{2,}", " ", text)
+
         return text
 
     def heal_split_words(self, text: str) -> str:
@@ -432,6 +585,10 @@ class TextCleaner:
             return False
 
         if self.is_likely_page_number(s):
+            return True
+
+        # Publisher forma signatures at bottom of print sheets (e.g. "Sançez'in Çocukları 81/6", "saoçezio ocokları 225/15", "sançezln çocuklan 389/24", "17/2")
+        if re.search(r"\b\d{1,4}\s*[\/\\]\s*\d{1,3}\b", s) and len(s) < 55:
             return True
 
         # Footer lines like author signature or author + roman numeral at page bottom e.g. 'Oscar Lewis vuı ·'
