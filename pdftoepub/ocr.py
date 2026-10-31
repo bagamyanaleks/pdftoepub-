@@ -49,17 +49,29 @@ def get_tessdata_dir(tesseract_binary: Optional[str] = None) -> Optional[str]:
     if os.environ.get("TESSDATA_PREFIX") and os.path.isdir(os.environ["TESSDATA_PREFIX"]):
         return os.environ["TESSDATA_PREFIX"]
 
+    candidates = [
+        # Linux standard distribution paths (Ubuntu, Debian, Docker)
+        "/usr/share/tesseract-ocr/5/tessdata",
+        "/usr/share/tesseract-ocr/4.00/tessdata",
+        "/usr/share/tesseract-ocr/tessdata",
+        "/usr/share/tessdata",
+        # macOS Homebrew paths
+        "/opt/homebrew/share/tessdata",
+        "/usr/local/share/tessdata",
+    ]
+
     if tesseract_binary:
         bin_dir = os.path.dirname(os.path.abspath(tesseract_binary))
         candidates = [
             os.path.join(bin_dir, "tessdata"),
             os.path.join(bin_dir, "..", "tessdata"),
             os.path.join(bin_dir, "..", "share", "tessdata"),
-        ]
-        for c in candidates:
-            norm = os.path.abspath(c)
-            if os.path.isdir(norm):
-                return norm
+        ] + candidates
+
+    for c in candidates:
+        norm = os.path.abspath(c)
+        if os.path.isdir(norm):
+            return norm
 
     return None
 

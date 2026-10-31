@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue?logo=python" alt="Python Version" />
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker Ready" />
   <img src="https://img.shields.io/badge/CUDA-GPU%20Accelerated-green?logo=nvidia" alt="NVIDIA CUDA" />
-  <img src="https://img.shields.io/badge/OCR-EasyOCR%20%2B%20CRAFT-orange" alt="EasyOCR" />
+  <img src="https://img.shields.io/badge/OCR-Tesseract%205%20%2B%20EasyOCR-blue" alt="Tesseract 5 & EasyOCR" />
   <img src="https://img.shields.io/badge/Kindle-AZW3%20%26%20EPUB3-purple?logo=amazon" alt="Kindle & EPUB" />
   <img src="https://img.shields.io/badge/UI-FastAPI%20%2B%20Modern%20Studio-red?logo=fastapi" alt="FastAPI" />
   <img src="https://img.shields.io/badge/License-MIT-brightgreen" alt="MIT License" />
@@ -31,14 +31,17 @@ Converting PDF books into clean E-books (EPUB / Kindle AZW3) is notoriously diff
 4. **Hyphenation & Split Words:** Words split across line breaks (e.g. `öğren-\n ciler` or `k ader`).
 5. **Running Headers & Footers:** Page numbers and book titles leaking into paragraph text.
 
-**PDF to EPUB & AZW3 Studio** resolves all of these issues locally and automatically using a hybrid extraction architecture and a specialized Turkish linguistic cleaner.
+**PDF to EPUB & AZW3 Studio** resolves all of these issues locally and automatically using a hybrid extraction architecture, dual-engine OCR (Tesseract 5 + EasyOCR), and a specialized Turkish linguistic cleaner.
 
 ---
 
 ## Key Features
 
 * **Intelligent Hybrid PDF Analysis (`analyzer.py`):** Inspects every page before processing. Clean digital pages are extracted instantaneously; only scanned or corrupted pages are routed to the OCR engine.
-* **GPU-Accelerated Local OCR (`ocr.py`):** Powered by EasyOCR with PyTorch CUDA (CRAFT text detection & deep neural recognizer). Renders pages at 300 DPI for maximum optical fidelity without sending any data to cloud services.
+* **Dual-Engine Local OCR (`ocr.py`):**
+  * **Tesseract 5 (LSTM):** High-precision text recognition with official `tessdata_best` Turkish language model. Unmatched accuracy for scanned Turkish literary prose.
+  * **EasyOCR (PyTorch CUDA):** GPU-accelerated CRAFT text detector and recognizer for deep neural fallback.
+  * **Smart Auto-Selection:** Automatically leverages Tesseract 5 when available or falls back to GPU EasyOCR.
 * **Advanced Turkish Linguistic Post-Processor (`cleaner.py`):**
   * Automatically fixes dialogue punctuation and quotes (`"Seni arıyorduk; 2) dedi"` ➔ `"Seni arıyorduk," dedi`).
   * Seamless de-hyphenation across line wraps with compound word preservation (`Türk-İslam`).
@@ -161,20 +164,27 @@ cd pdftoepub-
   source .venv/bin/activate
   ```
 
-### 3. Install Dependencies
+### 3. Install Dependencies & Tesseract 5
 
-#### Option A: GPU Acceleration (Recommended for NVIDIA Users)
-Install PyTorch with CUDA support first, then the remaining requirements:
-```bash
-# Example for CUDA 12.1 (adjust according to your CUDA driver):
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-pip install -r requirements.txt
+#### 🚀 1-Click Setup on Windows:
+Simply double-click `install_dependencies.bat` or run:
+```bat
+install_dependencies.bat
 ```
+*(Automatically installs requirements and downloads Tesseract 5 + Turkish models).*
 
-#### Option B: CPU Only
-```bash
-pip install -r requirements.txt
-```
+#### Manual Setup:
+* **Option A: GPU Acceleration (Recommended for NVIDIA Users):**
+  ```bash
+  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+  pip install -r requirements.txt
+  python scripts/setup_tesseract.py
+  ```
+* **Option B: CPU Only:**
+  ```bash
+  pip install -r requirements.txt
+  python scripts/setup_tesseract.py
+  ```
 
 ### 4. Install Calibre (For Kindle AZW3 Support)
 * **Windows:**
@@ -199,31 +209,41 @@ pip install -r requirements.txt
 Launch the interactive web UI:
 ```bash
 python web_ui.py
+# Or on Windows simply double-click: start_studio.bat
 ```
 Open your browser at: **`http://127.0.0.1:8000`**
 
 ### 2. Command Line Interface (CLI)
 ```bash
-# Automatic OCR strategy (Default):
+# Automatic OCR strategy (Default - Tesseract 5 preferred):
 python convert.py "path/to/book.pdf"
 
+# Select OCR Engine explicitly (tesseract or easyocr):
+python convert.py "path/to/book.pdf" --ocr-engine tesseract
+python convert.py "path/to/book.pdf" --ocr-engine easyocr
+
 # Force OCR for all pages:
-python convert.py "path/to/book.pdf" --ocr-mode force
+python convert.py "path/to/book.pdf" --ocr force
 
 # Extract digital text only (Disable OCR):
-python convert.py "path/to/book.pdf" --ocr-mode none
+python convert.py "path/to/book.pdf" --ocr none
 
 # Custom output directory:
-python convert.py "path/to/book.pdf" --output-dir "my_ebooks"
+python convert.py "path/to/book.pdf" --output "my_ebooks"
 ```
 
 ---
 
-## OCR Strategies Explained
+## OCR Strategies & Engines Explained
 
-* **`auto` (Recommended):** The analyzer inspects each page's text coverage and font encoding. If the page contains clean digital text, it is parsed directly in milliseconds. If the page is a scan or has font corruption, GPU OCR runs automatically.
-* **`force`:** Forces 300 DPI GPU OCR on every single page regardless of whether digital text exists. Ideal for poorly scanned photocopies with faulty existing text layers.
-* **`none`:** Disables OCR completely. Extremely fast (takes 3-10 seconds for a full book), recommended for born-digital PDFs.
+* **OCR Engines (`--ocr-engine`):**
+  * **`auto` (Recommended):** Uses Tesseract 5 (LSTM) if available with Turkish models, or falls back to GPU EasyOCR.
+  * **`tesseract`:** High-precision LSTM OCR with official `tessdata_best` Turkish dataset. Best typographical accuracy.
+  * **`easyocr`:** Deep-learning neural text recognition (PyTorch CUDA accelerated).
+* **Scan Modes (`--ocr`):**
+  * **`auto` (Default):** Inspects each page. Clean digital text is extracted directly in milliseconds; scanned or corrupted pages are routed to OCR.
+  * **`force`:** Forces 300 DPI OCR on every single page.
+  * **`none`:** Disables OCR completely (takes 3-10 seconds for a full digital book).
 
 ---
 
@@ -337,20 +357,23 @@ cd pdftoepub-
   source .venv/bin/activate
   ```
 
-### 3. Paketleri Yükleyin
+### 3. Paketleri ve Tesseract 5'i Yükleyin
 
-#### NVIDIA Ekran Kartı Olanlar (GPU Hızlandırma İçin):
-Önce CUDA destekli PyTorch paketini, ardından diğer kütüphaneleri yükleyin:
-```bash
-# CUDA 12.1 için örnek (sisteminizdeki CUDA sürümüne göre seçebilirsiniz):
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-pip install -r requirements.txt
-```
+#### 🚀 Windows İçin Tek Tıkla Kurulum:
+Klasördeki `install_dependencies.bat` dosyasına çift tıklayarak Python gereksinimlerini ve Tesseract 5 + Türkçe dil paketlerini tek seferde otomatik kurabilirsiniz.
 
-#### Sadece İşlemci (CPU) Kullanacaklar İçin:
-```bash
-pip install -r requirements.txt
-```
+#### Manuel Kurulum:
+* **NVIDIA Ekran Kartı Olanlar (GPU Hızlandırma İçin):**
+  ```bash
+  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+  pip install -r requirements.txt
+  python scripts/setup_tesseract.py
+  ```
+* **Sadece İşlemci (CPU) Kullanacaklar İçin:**
+  ```bash
+  pip install -r requirements.txt
+  python scripts/setup_tesseract.py
+  ```
 
 ### 4. Calibre Kurulumu (Kindle AZW3 Formatı İçin)
 * **Windows:**
@@ -373,34 +396,44 @@ pip install -r requirements.txt
 ## Kullanım Rehberi
 
 ### 1. Web Stüdyosu (Önerilen)
-Web stüdyosunu başlatmak için terminale şunu yazın:
+Web stüdyosunu başlatmak için:
 ```bash
 python web_ui.py
+# Veya Windows'ta çift tıklayın: start_studio.bat
 ```
 Tarayıcınız otomatik olarak açılacaktır (`http://127.0.0.1:8000`). PDF dosyanızı sürükleyip bırakarak dönüştürmeyi tek tıkla başlatabilirsiniz.
 
 ### 2. Komut Satırı (CLI)
 ```bash
-# Akıllı otomatik mod (Varsayılan):
+# Akıllı otomatik mod (Varsayılan - Tesseract 5 öncelikli):
 python convert.py "kitap.pdf"
 
+# OCR motorunu belirterek çalıştırma:
+python convert.py "kitap.pdf" --ocr-engine tesseract
+python convert.py "kitap.pdf" --ocr-engine easyocr
+
 # Tüm sayfalara zorunlu OCR uygulama:
-python convert.py "kitap.pdf" --ocr-mode force
+python convert.py "kitap.pdf" --ocr force
 
 # OCR çalıştırmadan sadece metni alma (Dijital PDF'ler için):
-python convert.py "kitap.pdf" --ocr-mode none
+python convert.py "kitap.pdf" --ocr none
 
 # Farklı çıktı klasörü belirtme:
-python convert.py "kitap.pdf" --output-dir "cikti_kitaplar"
+python convert.py "kitap.pdf" --output "cikti_kitaplar"
 ```
 
 ---
 
-## OCR Stratejileri
+## OCR Motorları ve Stratejileri
 
-* **`auto` (Önerilen - Akıllı Mod):** Sayfada seçilebilir metin varsa ve font hatası yoksa metni saniyeler içinde doğrudan alır. Sadece resim olan veya fontu bozuk sayfalarda GPU OCR çalıştırır.
-* **`force` (Zorunlu OCR):** Tüm sayfalara istisnasız 300 DPI OCR uygular. Eski, kötü taranmış ve mevcut metin katmanı bozuk kitaplar için idealdir.
-* **`none` (Yalnızca Dijital Metin):** OCR'ı tamamen kapatır. Kitap taranmış değil de doğrudan dijital üretilmişse işlemi 5-10 saniyede bitirir.
+* **OCR Motorları (`--ocr-engine`):**
+  * **`auto` (Önerilen):** Tesseract 5 kuruluysa yüksek Türkçe doğruluk için Tesseract 5'i, değilse GPU destekli EasyOCR'ı seçer.
+  * **`tesseract`:** Tesseract 5 LSTM derin öğrenme motoru ve `tessdata_best` Türkçe veri seti ile roman/kitap metinlerinde sıfır harf hatası sunar.
+  * **`easyocr`:** PyTorch CUDA ivmelendirmeli CRAFT derin sinir ağı.
+* **Tarama Kapsamı (`--ocr`):**
+  * **`auto` (Akıllı Mod):** Sayfada seçilebilir metin varsa metni saniyeler içinde doğrudan alır. Yalnızca resim olan veya fontu bozuk sayfalarda OCR çalıştırır.
+  * **`force` (Zorunlu OCR):** Tüm sayfalara istisnasız 300 DPI OCR uygular. Eski, kötü taranmış kitaplar için idealdir.
+  * **`none` (Yalnızca Dijital Metin):** OCR'ı tamamen kapatır. Kitap doğrudan dijital üretilmişse işlemi 5-10 saniyede bitirir.
 
 ---
 
@@ -410,18 +443,25 @@ python convert.py "kitap.pdf" --output-dir "cikti_kitaplar"
 pdftoepub-/
 ├── pdftoepub/
 │   ├── analyzer.py          # PDF analiz ve OCR tetikleme kararları
-│   ├── ocr.py               # GPU destekli EasyOCR motoru (300 DPI)
+│   ├── ocr.py               # Çoklu OCR motoru (Tesseract 5 & EasyOCR CUDA)
 │   ├── cleaner.py           # Türkçe dilbilimsel ve OCR temizleme kuralları
 │   ├── structure.py         # Bölüm ve içindekiler (TOC) algılayıcı
 │   ├── builder_epub.py      # EPUB3 standart e-kitap üretici
 │   ├── converter_azw.py     # Calibre AZW3 dönüştürücü entegrasyonu
 │   ├── media.py             # Kapak ve görsel çıkarma yöneticisi
 │   ├── pipeline.py          # Uçtan uca dönüştürme orkestrasyonu
-│   ├── web.py               # FastAPI backend ve SSE durum yayını
+│   ├── web.py               # FastAPI backend ve durum yayını
 │   └── static/              # Web Studio frontend (HTML/CSS/JS)
-├── tests/                   # Birim testleri
+├── scripts/
+│   └── setup_tesseract.py   # Çapraz platform Tesseract 5 kurulum sihirbazı
+├── tests/                   # Kapsamlı birim testleri
+├── install_dependencies.bat # Windows tek tıkla tam gereksinim kurulumu
+├── install_tesseract.bat    # Windows tek tıkla Tesseract 5 kurulumu
+├── start_studio.bat         # Windows tek tıkla Web Studio başlatıcı
 ├── convert.py               # CLI başlatıcı
 ├── web_ui.py                # Web Studio başlatıcı
+├── Dockerfile               # Tesseract 5 ve Calibre içeren Docker yapılandırması
+├── docker-compose.yml       # GPU ve CPU Docker servisleri
 ├── requirements.txt         # Gerekli Python kütüphaneleri
 ├── LICENSE                  # MIT Lisansı
 └── README.md                # Proje dokümantasyonu (TR & EN)

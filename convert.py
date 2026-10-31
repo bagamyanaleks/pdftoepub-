@@ -31,6 +31,7 @@ def process_single_pdf(pdf_path: str, args) -> bool:
     
     pipeline = ConversionPipeline(
         ocr_mode=args.ocr,
+        ocr_engine=args.ocr_engine,
         use_gpu=None if args.gpu is None else args.gpu,
         calibre_path=args.calibre_path
     )
@@ -90,6 +91,7 @@ def main():
     parser.add_argument("--batch", "-b", help="Klasördeki tüm PDF'leri toplu dönüştür", default=None)
     parser.add_argument("--output", "-o", help="Çıktı klasörü (Varsayılan: PDF ile aynı dizin)", default=None)
     parser.add_argument("--ocr", choices=["auto", "force", "none"], default="auto", help="OCR Modu (auto: yalnızca gerektiğinde, force: tüm sayfalara, none: sadece vektörel)")
+    parser.add_argument("--ocr-engine", choices=["auto", "tesseract", "easyocr"], default="auto", help="OCR Motoru (auto: Tesseract 5 öncelikli, tesseract: Tesseract 5 LSTM, easyocr: EasyOCR GPU)")
     parser.add_argument("--gpu", action="store_true", default=None, help="GPU ivmelendirmeyi zorla aç")
     parser.add_argument("--no-gpu", dest="gpu", action="store_false", help="GPU kullanma, CPU ile çalıştır")
     parser.add_argument("--title", "-t", help="Kitap başlığını manuel belirle", default=None)

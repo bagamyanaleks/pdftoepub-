@@ -12,10 +12,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Install system dependencies:
 # - calibre: for ebook-convert CLI tool (AZW3 conversion)
+# - tesseract-ocr & language data: for high-accuracy local Turkish and English OCR
 # - libgl1, libglib2.0-0, libgomp1: required by OpenCV, EasyOCR, and PyMuPDF
 # - curl: for container healthchecks
 RUN apt-get update && apt-get install -y --no-install-recommends \
     calibre \
+    tesseract-ocr \
+    tesseract-ocr-tur \
+    tesseract-ocr-eng \
+    tesseract-ocr-osd \
+    poppler-utils \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
