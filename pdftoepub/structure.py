@@ -188,7 +188,7 @@ class StructureDetector:
         # Filter out empty chapters (chapters with no paragraphs or images)
         meaningful_chapters: List[Chapter] = []
         for chap in raw_chapters:
-            content_blocks = [b for b in chap.blocks if b.block_type in ("paragraph", "image")]
+            content_blocks = [b for b in chap.blocks if b.block_type in ("paragraph", "image", "footnote")]
             if content_blocks:
                 meaningful_chapters.append(chap)
             elif meaningful_chapters:

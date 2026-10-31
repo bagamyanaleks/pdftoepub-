@@ -114,6 +114,24 @@ hr.scene-break {
     width: 25%;
     margin: 2em auto;
 }
+
+aside.footnote-block {
+    margin-top: 1.2em;
+    margin-bottom: 0.8em;
+    padding: 0.5em 1em;
+    font-size: 0.85em;
+    color: #4a5568;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-left: 3px solid #718096;
+    border-radius: 2px;
+    text-indent: 0;
+}
+
+aside.footnote-block p.footnote-text {
+    text-indent: 0;
+    margin: 0;
+    line-height: 1.45;
+}
 """
 
 
@@ -222,6 +240,12 @@ class EPUBBuilder:
                         escaped_text = sanitize_xml_text(text)
                         html_parts.append(f'    <p{class_attr}>{escaped_text}</p>')
                         is_first_p = False
+                elif block.block_type == "footnote":
+                    fn_text = sanitize_xml_text(block.text.strip())
+                    if fn_text:
+                        html_parts.append(
+                            f'    <aside epub:type="footnote" class="footnote-block"><p class="footnote-text">{fn_text}</p></aside>'
+                        )
 
             html_parts.extend([
                 '  </section>',

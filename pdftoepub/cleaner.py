@@ -77,6 +77,7 @@ OCR_REPLACEMENTS = [
 
     # Common OCR letter confusions in Turkish
     (r"\bcl([a-zçğıöşüA-ZÇĞİÖŞÜ]+)", r"d\1"),    # clünya -> dünya, clar -> dar
+    (r"\b[ı1]([aeiouöüAEIİOUÖÜ][a-zçğıöşü]{2,})\b", r"\1"),  # Leading stray dotless-ı/1 before vowel (1istediğim -> istediğim)
     (r"\b1([a-zçğıöşü]{2,})", r"i\1"),          # 1çinde -> içinde, 1le -> ile
     (r"([a-zçğıöşü])1([a-zçğıöşü])", r"\1ı\2"),   # yap1lan -> yapılan
 
@@ -111,11 +112,61 @@ OCR_REPLACEMENTS = [
     (r"\bde-?\s*vcım\b", "devam"),
     (r"\bdcı\b", "da"),
     (r"\bVecindacl\b", "Vecindad"),
+    (r"\bvecindacl\b", "vecindad"),
+    (r"\bVecinclad\b", "Vecindad"),
+    (r"\bVect[ıi]dad\b", "Vecindad"),
     (r"\blııaldeki\b", "haldeki"),
     (r"\bhIaldeki\b", "haldeki"),
     (r"\bU\s+lan\b", "Ulan"),
     (r"\bEllt\s+altı\b", "Elli altı"),
     (r"\byuzu\s+gozu\b", "yüzü gözü"),
+
+    # Book-specific OCR distortions and internal colon/character misrecognitions
+    (r"\botw:\s*anların\b", "oturanların"),
+    (r"\bPa:\s*[ıi1]w\b", "Pazar"),
+    (r"\bgizlfliği([a-zçğıöşü]*)\b", r"gizliliği\1"),
+    (r"\bCompaclre\b", "Compadre"),
+    (r"\b([A-Za-zçğıöşü]+)clre\b", r"\1dre"),
+    (r"\bekraba\b", "akraba"),
+    (r"\b[ı1]evine\b", "evine"),
+    (r"\b[ı1]([aeiouöü][a-zçğıöşü]{2,})\b", r"\1"),  # Leading stray dotless-ı/1 before vowel
+    (r"\b([a-zçğıöşüA-ZÇĞİÖŞÜ]+)ıe(ri|re|r|k|n|ce|cek|di|miş|mez)\b", r"\1le\2"),  # ödemeıeri -> ödemeleri
+    (r"\bGua['’]dalupe\b", "Guadalupe"),
+    (r"\bol[ıi1]?v[ıi1]ağı\b", "olanağı"),
+    (r"\bBunlarkısa\b", "Bunlar kısa"),
+    (r"\bTaca\s*\([o0]{2,3}\)", "Taco (*)"),
+    (r"\bPulq['’]ue\b", "Pulque"),
+    (r"\bSablrtıt['’]?uyla\b", "Sabır otuyla"),
+    (r"\bhe[\.\s•]*[ıi]?,?\s*le\s*ne\s*rak\b", "haşlanarak"),
+    (r"\blahme\.?eun\b", "lahmacun"),
+    (r"\bTal[ıi]:\s*o:\s*", "Taco: "),
+    (r"\bkültürü\s+[ıi1]\s+içinde\b", "kültürü içinde"),
+    (r"\b([A-Za-zçğıöşü]+)cl\b", r"\1d"),  # Word-final 'cl' misread for 'd'
+    (r"\bclemiştim\b", "demiştim"),
+    (r"\bmukavvadanclı\b", "mukavvadandı"),
+    (r"\bcenclzeyle\b", "cenazeyle"),
+    (r"\bGraclela\b", "Graciela"),
+    (r"\bgeJ:irlerini\b", "gelirlerini"),
+    (r"\bçocui:jU\b", "çocuğu"),
+    (r"\btutıH:ağını\b", "tutacağını"),
+    (r"\bhc:lt\b", "halt"),
+    (r"\bso:ğnüyorum\b", "söylüyorum"),
+    (r"\bso:rdu\b", "sordu"),
+    (r"\bgide:k\b", "gidecek"),
+    (r"\bolmc:dı\b", "olmadı"),
+    (r"\bz:aman\b", "zaman"),
+    (r"\bnıyordu:n\b", "nıyordun"),
+    (r"\bipli:k\b", "iplik"),
+    (r"\bCe[\.re]{3,6}mbe\.?\b", "Caramba"),
+    (r"\bChnlto\b", "Chinito"),
+    (r"\bmanatinas\b", "mañanitas"),
+    (r"\bceatav'o\b", "centavo"),
+    (r"\bNovl[ıi1]\.?\b", "Novia"),
+    (r"\bNovlo\b", "Novio"),
+    (r"\bTortille\.?\b", "Tortilla"),
+    (r"\bAl:,\s*al:,\s*ak\b", "Agüita, agüita, agua"),
+    (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)\s*[\.,;:>]+\s*:", r"\1:"),  # Strip stray period/comma before colon in definition terms
+    (r"\.\.(?!\.)", "."),  # Double periods to single period
 
     # Stray apostrophes splitting common lowercase words (birey'cilik -> bireycilik, şük'ran -> şükran)
     (r"\b([a-zçğıöşü]{2,})['’]([a-zçğıöşü]{2,})\b", r"\1\2"),
@@ -267,6 +318,21 @@ class TextCleaner:
             return f"{w1}, {w2}"
 
         text = re.sub(r"\b([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]{2,})\.\s+([a-zçğıöşü]{3,})\b", fix_period_as_comma, text)
+
+        # Period misread as comma after finite verbs before a capitalized sentence starter
+        # e.g., 'gelenekselleşmiştir, Bazı kişiler' -> 'gelenekselleşmiştir. Bazı kişiler'
+        finite_verb_suffix = re.compile(
+            r"(?:miştir|mıştır|muştur|müştür|di|dı|du|dü|ti|tı|tu|tü|mektedir|maktadır|cektir|caktır|yordu|yormuş|malıydı|meliydi)$",
+            re.IGNORECASE
+        )
+        def fix_comma_before_capital(m):
+            w_before = m.group(1)
+            w_after = m.group(2)
+            if finite_verb_suffix.search(w_before):
+                return f"{w_before}. {w_after}"
+            return m.group(0)
+
+        text = re.sub(r"\b([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]{3,}),\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})\b", fix_comma_before_capital, text)
 
         return text
 
@@ -566,3 +632,71 @@ class TextCleaner:
 
         paragraphs = self.reconstruct_paragraphs(joined.split("\n"))
         return "\n\n".join(paragraphs)
+
+    def extract_page_footnotes(self, raw_text: str) -> Tuple[str, List[str]]:
+        """
+        Detects footnotes located at the bottom of a page, strips them from the body text lines,
+        cleans them linguistically, and returns (body_text_without_footnotes, cleaned_footnotes).
+        This prevents bottom-of-page footnotes from breaking hyphenated words or disrupting cross-page paragraphs.
+        """
+        if not raw_text:
+            return "", []
+
+        lines = raw_text.split("\n")
+        footnote_pattern = re.compile(
+            r"^(?:[\(\<\[][\s•\*~·\d\w\?O]{1,5}[\)\>\]]|,?\s*\.{2,}\s*>)\s*(?:[A-Za-zçğıöşüA-ZÇĞİÖŞÜ\s']{1,25}:|[A-Za-zçğıöşüA-ZÇĞİÖŞÜ]{2,})|"
+            r"^(?:Vecindad|Pulqueria|Pulque|Taco|Talı|Compadre|Compadrazgo|Avocado|Tortilla|Chinito|Chino|Novia|Novio|Caramba|Madre|Hombre|Tequila|Baro|Mañanitas)\s*:",
+            re.IGNORECASE
+        )
+
+        footnote_start_idx = -1
+        # In books, footnotes appear near the bottom (among the last 14 lines)
+        start_search = max(0, len(lines) - 14)
+        for idx in range(start_search, len(lines)):
+            l_str = lines[idx].strip()
+            if not l_str:
+                continue
+            if footnote_pattern.match(l_str):
+                footnote_start_idx = idx
+                break
+
+        if footnote_start_idx == -1:
+            return raw_text, []
+
+        body_lines = lines[:footnote_start_idx]
+        fn_lines_raw = lines[footnote_start_idx:]
+
+        clean_fn = []
+        current_fn = []
+
+        for l in fn_lines_raw:
+            s = l.strip()
+            if not s:
+                continue
+            if self.is_likely_page_number(s):
+                continue
+            if footnote_pattern.match(s):
+                if current_fn:
+                    clean_fn.append(" ".join(current_fn))
+                    current_fn = []
+                # Clean leading brackets/bullet symbols: e.g. '( • ) ', '< • > '
+                s_clean = re.sub(r"^(?:[\(\<\[][\s•\*~·\d\w\?O]{1,5}[\)\>\]]|,?\s*\.{2,}\s*>)\s*", "", s)
+                current_fn.append(s_clean)
+            else:
+                current_fn.append(s)
+
+        if current_fn:
+            clean_fn.append(" ".join(current_fn))
+
+        # Apply unicode normalization and OCR cleanups on footnotes
+        processed_fn = []
+        for fn in clean_fn:
+            fn_clean = self.normalize_unicode(fn)
+            fn_clean = self.clean_ocr_errors(fn_clean)
+            fn_clean = self.heal_split_words(fn_clean)
+            fn_clean = re.sub(r"\s+", " ", fn_clean).strip()
+            if fn_clean:
+                processed_fn.append(fn_clean)
+
+        return "\n".join(body_lines), processed_fn
+

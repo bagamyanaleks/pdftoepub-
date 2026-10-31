@@ -154,6 +154,14 @@ class ConversionPipeline:
 
         doc = fitz.open(pdf_path)
         document_blocks: List[DocumentBlock] = []
+        pending_footnotes: List[str] = []
+
+        def flush_footnotes():
+            nonlocal pending_footnotes
+            if pending_footnotes:
+                for fn in pending_footnotes:
+                    document_blocks.append(DocumentBlock(text=fn, block_type="footnote"))
+                pending_footnotes = []
 
         # Extract printed TOC if present in book (e.g. pages 4-7)
         printed_toc = self.structure_detector.extract_printed_toc(doc)
@@ -247,6 +255,7 @@ class ConversionPipeline:
                 chapter_title = printed_toc.get(page_num, "")
 
                 if is_toc_chapter_start:
+                    flush_footnotes()
                     document_blocks.append(
                         DocumentBlock(text=chapter_title, block_type="heading", level=1)
                     )
@@ -254,10 +263,14 @@ class ConversionPipeline:
                         document_blocks.extend(page_image_blocks)
                         page_image_blocks = []
 
-                # Step 5: Clean page text and split into blocks
+                # Step 5: Extract footnotes & clean page text and split into blocks
                 if page_raw_text.strip():
+                    page_body_raw, page_fns = self.cleaner.extract_page_footnotes(page_raw_text)
+                    if page_fns:
+                        pending_footnotes.extend(page_fns)
+
                     cleaned_page_text = self.cleaner.process_full_text(
-                        page_raw_text,
+                        page_body_raw,
                         book_title=book_title,
                         author=book_author
                     )
@@ -293,6 +306,7 @@ class ConversionPipeline:
                             )
 
                             if is_heading:
+                                flush_footnotes()
                                 document_blocks.append(
                                     DocumentBlock(text=p_stripped, block_type="heading", level=1)
                                 )
@@ -311,7 +325,7 @@ class ConversionPipeline:
                                 if document_blocks[b_i].block_type == "paragraph":
                                     prev_p_idx = b_i
                                     break
-                                elif document_blocks[b_i].block_type == "heading":
+                                elif document_blocks[b_i].block_type in ("heading", "footnote"):
                                     break
 
                         if prev_p_idx is not None:
@@ -339,7 +353,7 @@ class ConversionPipeline:
                 if page_image_blocks:
                     document_blocks.extend(page_image_blocks)
 
-
+            flush_footnotes()
             doc.close()
 
             # Step 6: Build Book Chapters & TOC
