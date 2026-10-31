@@ -168,6 +168,30 @@ OCR_REPLACEMENTS = [
     (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ]+)\s*[\.,;:>]+\s*:", r"\1:"),  # Strip stray period/comma before colon in definition terms
     (r"\.\.(?!\.)", "."),  # Double periods to single period
 
+    # OCR noise: underscores inside words (e.g. ye_dim -> yedim, etm_ek -> etmek)
+    (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])_([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])", r"\1\2"),
+
+    # OCR noise: \J or \j inside words (e.g. Man\Jel -> Manuel, yokt\Jr -> yoktur)
+    (r"\bMan\\?Jel\b", "Manuel"),
+    (r"([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])\\[Jj]([a-zA-ZçğıöşüA-ZÇĞİÖŞÜ])", r"\1u\2"),
+    (r"\bbüyuk\b", "büyük"),
+
+    # Digits misread for letters or punctuation inside Turkish words
+    (r"\b1Vecindadn\b", '"Vecindad"'),
+    (r"\bcccompadre1\b", '"compadre"'),
+    (r"\bAllah1\b", "Allah!"),
+    (r"\b(ha|o|ki|ya|ne|mi|mı|mu|mü|bu|şu|kim|sen|ben|biz|siz|nerede|nasıl|niçin|neden)7\b", r"\1?"),
+    (r"\b8ir\b", "bir"),
+    (r"\bp2ra\b", "para"),
+    (r"\by3tak", "yatak"),
+    (r"\b([a-zçğıöşü]+)l8\b", r"\1li"),
+    (r"\bg6r([a-zçğıöşü]*)", r"gör\1"),
+    (r"\b9([a-zçğıöşü]{2,})", r"g\1"),
+    (r"([a-zçğıöşü])9([a-zçğıöşü])", r"\1g\2"),
+
+    # Trailing roman numerals at the end of preface paragraphs
+    (r",\s*[ivxlcdmı1u]{1,6}\s*[·•\.]*$", "."),
+
     # Stray apostrophes splitting common lowercase words (birey'cilik -> bireycilik, şük'ran -> şükran)
     (r"\b([a-zçğıöşü]{2,})['’]([a-zçğıöşü]{2,})\b", r"\1\2"),
 
@@ -277,8 +301,8 @@ class TextCleaner:
         text = text.replace("\u0957", "ğ")  # Devanagari gravity mark used as ğ (olduॗu -> olduğu)
         text = re.sub(r"[\u0A00-\u0A7F]", "Ğ", text)  # Gurmukhi letters used for Ğ (ÇOCUKLUਲ਼UM -> ÇOCUKLUĞUM)
 
-        # 2. Strip exotic non-Latin noise characters
-        text = re.sub(r"[\u0900-\u097F\u0530-\u058F\u1200-\u137F\u0250-\u02AF\u036E\u036F]", "", text)
+        # 2. Strip exotic non-Latin noise characters (All Indic scripts \u0900-\u0DFF, Tibetan, Ethiopic, Khmer, etc.)
+        text = re.sub(r"[\u0900-\u0DFF\u0530-\u058F\u0F00-\u109F\u1200-\u137F\u1780-\u17FF\u0250-\u02AF\u036E\u036F\u25A0-\u27BF]", "", text)
 
         # 3. NFC normalizes combining accents like s + ¸ into ş
         text = unicodedata.normalize("NFC", text)
@@ -395,8 +419,8 @@ class TextCleaner:
         if re.match(r"^[-–—_=\*•~·\[\(\s]*\d{1,4}[-–—_=\*•~·\]\)\.\s]*$", s):
             return True
         # Roman numerals e.g. 'iv', 'VII', 'Vll', 'IX', 'x', 'xı', 'vuı ·'
-        # Normalizes Turkish dotless ı -> i, lowercase l / 1 -> i, strips middle dots & ornaments
-        s_roman = s.lower().replace("·", "").replace("•", "").replace("ı", "i").replace("l", "i").replace("1", "i").replace(" ", "").replace("-", "")
+        # Normalizes Turkish dotless ı -> i, lowercase l / 1 -> i, u -> ii, strips middle dots & ornaments
+        s_roman = s.lower().replace("·", "").replace("•", "").replace("ı", "i").replace("l", "i").replace("1", "i").replace("u", "ii").replace(" ", "").replace("-", "")
         if re.match(r"^[ivxcdm]+$", s_roman) and 1 <= len(s_roman) <= 8:
             return True
         return False
@@ -452,6 +476,10 @@ class TextCleaner:
 
         # Standalone ornament lines (§, •, *, ~, ---, quotes)
         if re.match(r"^[\s§\*•~♦—\-_=\'\"]{1,10}$", s):
+            return True
+
+        # Printer metadata / scan batch separation marks e.g. "s20 ' xxxı = 552"
+        if re.search(r"\bxxx[ivxlcdmı1u]*\s*=", s, re.IGNORECASE) or re.match(r"^s?\d+\s*['\"]\s*[ivxlcdmı1u\s=]+\d+$", s, re.IGNORECASE):
             return True
 
         # Standalone single letters on their own line (e.g. stray 'k', 'l', 'v')
@@ -609,6 +637,10 @@ class TextCleaner:
             p = self.dehyphenate(p)
             p = self.clean_ocr_errors(p)
             p = self.heal_split_words(p)
+            # Strip trailing stray roman numerals or page numbers
+            p = re.sub(r",\s*[ivxlcdmı1u]{1,6}\s*[·•\.]*$", ".", p, flags=re.IGNORECASE)
+            # Ensure paragraph does not end with a trailing comma
+            p = re.sub(r",\s*$", ".", p)
             if p:
                 cleaned_paragraphs.append(p)
 

@@ -354,6 +354,11 @@ class ConversionPipeline:
                     document_blocks.extend(page_image_blocks)
 
             flush_footnotes()
+            # Clean trailing hyphen on final paragraph if present
+            for b in reversed(document_blocks):
+                if b.block_type == "paragraph":
+                    b.text = re.sub(r"[-–—\xad·•]+$", ".", b.text)
+                    break
             doc.close()
 
             # Step 6: Build Book Chapters & TOC

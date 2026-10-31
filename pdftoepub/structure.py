@@ -45,6 +45,20 @@ BOILERPLATE_WORDS = {
 }
 
 
+def clean_chapter_title(title: str) -> str:
+    """Cleans up OCR noise, spacing, and publisher price tags in detected chapter headings."""
+    t = title.strip()
+    if re.search(r"\b(?:LİRA|LIRA|FIYATI|FİYATI)\b", t, re.IGNORECASE) or re.match(r"^\d+[\s\d]*L[Iİ]RA", t, re.I):
+        return "Arka Kapak"
+    t = re.sub(r"\bO[ÇÇç][OOUUöü\s]*NC[OOUUöü]\b", "DÖRDÜNCÜ", t, flags=re.I)
+    t = re.sub(r"\bOÇONCO\b", "DÖRDÜNCÜ", t)
+    t = re.sub(r"\bO[ÜUüu]ONC[OOUu]\b", "DÖRDÜNCÜ", t, flags=re.I)
+    t = re.sub(r"\bÜNCÜ\b", "ÜÇÜNCÜ", t)
+    t = re.sub(r"\bC\s*O\s*NS\s*U\s*EL\s*O\b", "CONSUELO", t, flags=re.I)
+    t = re.sub(r"\bJES[UÜ]S\b", "JESÚS", t, flags=re.I)
+    return t
+
+
 class StructureDetector:
     def __init__(self):
         pass
@@ -67,6 +81,10 @@ class StructureDetector:
 
         # Headings NEVER end with conversational terminal punctuation or quotes enclosing them
         if re.search(r'[\.!\?,;:]["\'”’]?$', cleaned) and not re.match(r'^\d+\.', cleaned):
+            return False
+
+        # Reject math expressions, equals signs, or printer metadata
+        if "=" in cleaned or re.search(r"\bxxx[ivxlcdmı1u]*\s*=", cleaned, re.IGNORECASE):
             return False
 
         lower = cleaned.lower()
@@ -173,7 +191,8 @@ class StructureDetector:
         for block in blocks:
             if block.block_type == "heading":
                 chapter_counter += 1
-                title = block.text.strip()
+                title = clean_chapter_title(block.text.strip())
+                block.text = title
                 chap_id = f"chapter_{chapter_counter:03d}"
                 current_chapter = Chapter(title=title, chapter_id=chap_id)
                 raw_chapters.append(current_chapter)
