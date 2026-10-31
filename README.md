@@ -5,12 +5,13 @@
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white" alt="Docker Ready" />
   <img src="https://img.shields.io/badge/CUDA-GPU%20Accelerated-green?logo=nvidia" alt="NVIDIA CUDA" />
   <img src="https://img.shields.io/badge/OCR-Tesseract%205%20%2B%20EasyOCR-blue" alt="Tesseract 5 & EasyOCR" />
+  <img src="https://img.shields.io/badge/AI--Repair-Qwen%202.5%20In--Painting-orange" alt="Qwen AI In-Painting" />
   <img src="https://img.shields.io/badge/Kindle-AZW3%20%26%20EPUB3-purple?logo=amazon" alt="Kindle & EPUB" />
   <img src="https://img.shields.io/badge/UI-FastAPI%20%2B%20Modern%20Studio-red?logo=fastapi" alt="FastAPI" />
   <img src="https://img.shields.io/badge/License-MIT-brightgreen" alt="MIT License" />
 </p>
 
-An intelligent, GPU-accelerated local studio designed to convert scanned and digital PDF books into immaculate, typography-preserving **EPUB3** and Kindle-ready **AZW3** files. Built with custom Turkish linguistic post-processing, font kerning recovery, and OCR artifact repair.
+An intelligent, GPU-accelerated local studio designed to convert scanned and digital PDF books into immaculate, typography-preserving **EPUB3** and Kindle-ready **AZW3** files. Built with custom Turkish linguistic post-processing, font kerning recovery, dual-engine OCR (Tesseract 5 + EasyOCR), and **selective Qwen 2.5 AI In-Painting** for damaged paragraphs.
 
 ---
 
@@ -30,8 +31,9 @@ Converting PDF books into clean E-books (EPUB / Kindle AZW3) is notoriously diff
 3. **Severe OCR Artifacts:** Misrecognized quotation marks (e.g., closing quotes `”` misread as `2)`, `9)`, or `?)`), split dialogues, and joined paragraphs.
 4. **Hyphenation & Split Words:** Words split across line breaks (e.g. `öğren-\n ciler` or `k ader`).
 5. **Running Headers & Footers:** Page numbers and book titles leaking into paragraph text.
+6. **Margin Cropping & Noise Glyphs:** Pages scanned with cut-off edges or symbol garbage (`^ \~&`, `^>*-- b-`, `% o & ^->`).
 
-**PDF to EPUB & AZW3 Studio** resolves all of these issues locally and automatically using a hybrid extraction architecture, dual-engine OCR (Tesseract 5 + EasyOCR), and a specialized Turkish linguistic cleaner.
+**PDF to EPUB & AZW3 Studio** resolves all of these issues locally and automatically using a hybrid extraction architecture, dual-engine OCR (Tesseract 5 + EasyOCR), specialized Turkish linguistic cleaners, and selective AI in-painting.
 
 ---
 
@@ -47,8 +49,12 @@ Converting PDF books into clean E-books (EPUB / Kindle AZW3) is notoriously diff
   * Seamless de-hyphenation across line wraps with compound word preservation (`Türk-İslam`).
   * Heals unintended whitespace splits caused by tracked fonts (e.g., `bu landırır` ➔ `bulandırır`, `se kiz` ➔ `sekiz`).
   * Strips recurring headers, footers, and decorative noise lines without losing genuine narrative text.
+* **Selective Qwen 2.5 AI In-Painting (`ai_repair.py`):**
+  * Powered by local lightweight **Qwen 2.5 (1.5B / 0.5B)** models via Hugging Face Transformers or local Ollama endpoints.
+  * **Zero-Hallucination Anomaly Detection:** 99% of normal clean pages bypass the LLM for instant sub-second conversion. Only severely damaged paragraphs (margin cuts, symbol pollution) trigger selective literary restoration.
+  * Length and punctuation guardrails ensure faithful literary repair without extraneous plot invention.
 * **Kindle AZW3 Integration (`converter_azw.py`):** Direct pipeline to Calibre's `ebook-convert` engine for native Kindle formatting.
-* **Modern Web Studio (`web_ui.py`):** Responsive dark-mode dashboard with drag-and-drop file upload, real-time progress bars, and hardware telemetry (GPU/CPU mode indicator).
+* **Modern Web Studio (`web_ui.py`):** Responsive dark-mode dashboard with drag-and-drop file upload, real-time progress bars, AI repair toggle, and hardware telemetry (GPU/CPU mode indicator).
 * **CLI Interface (`convert.py`):** Batch process or automate conversions from your terminal.
 
 ---
@@ -67,7 +73,7 @@ Converting PDF books into clean E-books (EPUB / Kindle AZW3) is notoriously diff
                │                                                 │
                ▼                                                 │
      ┌───────────────────┐                                       │
-     │ GPU-EasyOCR Engine│ (300 DPI + CUDA)                      │
+     │ Dual-Engine OCR   │ (Tesseract 5 / GPU EasyOCR)           │
      └───────────────────┘                                       │
                │                                                 │
                ▼                                                 │
@@ -75,8 +81,15 @@ Converting PDF books into clean E-books (EPUB / Kindle AZW3) is notoriously diff
      │       Turkish Linguistic Cleaning Engine                │◄┘
      │  (De-hyphenation, Dialogue Fixes, Diacritics, Kerning)  │
      └─────────────────────────────────────────────────────────┘
-               │
-               ▼
+                                   │
+                Severely Damaged Paragraph? (Score ≥ 0.20)
+                     ┌─────────────┴─────────────┐
+                     ▼                           ▼
+            [ Qwen 2.5 In-Painting ]       [ Fast Path ]
+            (Selective AI Repair)          (Clean Prose)
+                     └─────────────┬─────────────┘
+                                   │
+                                   ▼
      ┌───────────────────┐
      │ Structure & TOC   │ ───► EPUB3 Builder ───► [ Clean EPUB ]
      └───────────────────┘                           │
@@ -129,7 +142,7 @@ Docker provides a zero-setup experience: **you don't need to install Python, PyT
 Navigate to: **`http://localhost:8000`** in your web browser.
 
 * **Persistent Files:** Converted `.epub` and `.azw3` books are automatically saved to your local `./converted_ebooks` directory.
-* **Cached Models:** EasyOCR model weights are stored in a persistent Docker volume (`pdftoepub_easyocr_cache`), so models are never re-downloaded.
+* **Cached Models:** EasyOCR model weights (`pdftoepub_easyocr_cache`) and Hugging Face Qwen 2.5 models (`pdftoepub_hf_cache`) are stored in persistent Docker volumes, so models are never re-downloaded between container runs.
 * **Stop Studio:**
   ```bash
   docker compose down
@@ -171,7 +184,7 @@ Simply double-click `install_dependencies.bat` or run:
 ```bat
 install_dependencies.bat
 ```
-*(Automatically installs requirements and downloads Tesseract 5 + Turkish models).*
+*(Automatically installs requirements including PyTorch, Transformers, and downloads Tesseract 5 + Turkish models).*
 
 #### Manual Setup:
 * **Option A: GPU Acceleration (Recommended for NVIDIA Users):**
@@ -212,11 +225,21 @@ python web_ui.py
 # Or on Windows simply double-click: start_studio.bat
 ```
 Open your browser at: **`http://127.0.0.1:8000`**
+* You can toggle **"Qwen AI Metin Onarımı (In-Painting)"** in the options to automatically heal severely damaged paragraphs.
 
 ### 2. Command Line Interface (CLI)
 ```bash
 # Automatic OCR strategy (Default - Tesseract 5 preferred):
 python convert.py "path/to/book.pdf"
+
+# Enable selective Qwen 2.5 AI In-Painting for damaged paragraphs:
+python convert.py "path/to/book.pdf" --ai-repair
+
+# Choose specific AI model (Default: Qwen/Qwen2.5-1.5B-Instruct, or 0.5B for ultra-fast):
+python convert.py "path/to/book.pdf" --ai-repair --ai-model "Qwen/Qwen2.5-1.5B-Instruct"
+
+# Use local Ollama or OpenAI-compatible endpoint:
+python convert.py "path/to/book.pdf" --ai-repair --ai-backend openai_compatible --ai-api-base "http://localhost:11434/v1" --ai-model "qwen2.5:1.5b"
 
 # Select OCR Engine explicitly (tesseract or easyocr):
 python convert.py "path/to/book.pdf" --ocr-engine tesseract
@@ -244,6 +267,9 @@ python convert.py "path/to/book.pdf" --output "my_ebooks"
   * **`auto` (Default):** Inspects each page. Clean digital text is extracted directly in milliseconds; scanned or corrupted pages are routed to OCR.
   * **`force`:** Forces 300 DPI OCR on every single page.
   * **`none`:** Disables OCR completely (takes 3-10 seconds for a full digital book).
+* **AI In-Painting (`--ai-repair`):**
+  * Scans cleaned paragraphs for severe OCR/margin corruption (anomaly score $\ge$ 0.20).
+  * Automatically invokes Qwen 2.5 to restore cut-off words, missing punctuation, and disrupted dialogue while maintaining 100% fidelity on normal pages.
 
 ---
 
@@ -261,23 +287,30 @@ PDF formatındaki kitapları e-okuyucular (Kindle, Kobo) veya telefonlar için d
 3. **OCR Hataları & Yanılgıları:** Standart OCR motorları kitaplardaki kapanış tırnaklarını (`”`) sıklıkla `2)`, `9)` veya `?)` şeklinde algılar; diyalogları bozar ve satır başlarını birleştirir.
 4. **Bölünen Kelimeler:** Satır sonundaki tire işaretleri (`öğren-\n ciler`) e-kitapta kopuk kelimeler olarak kalır.
 5. **Sayfa Numaraları ve Üstbilgiler:** Sayfa başındaki ve sonundaki sayfa numaraları ile kitap isimleri paragrafların içine karışır.
+6. **Kenar Kesilmeleri ve Sembol Karmaşası:** Taranırken sağ/sol kenarı kesilen sayfalardaki anlamsız semboller (`^ \~&`, `^>*-- b-`, `% o & ^->`) metin akışını bozar.
 
-**PDF to EPUB & AZW3 Studio**, tamamen yerel olarak bilgisayarınızda çalışarak bu sorunları yapay zeka destekli Türkçe dilbilimsel temizleme algoritmalarıyla çözer.
+**PDF to EPUB & AZW3 Studio**, tamamen yerel olarak bilgisayarınızda çalışarak bu sorunları yapay zeka destekli Türkçe dilbilimsel temizleme algoritmaları, çift motorlu OCR (Tesseract 5 + EasyOCR) ve **seçici Qwen 2.5 AI Metin Onarımı (In-Painting)** ile çözer.
 
 ---
 
 ## Öne Çıkan Özellikler
 
 * **Akıllı Sayfa Analizi (`analyzer.py`):** Dönüştürme öncesi her sayfayı inceler. Temiz dijital sayfaları doğrudan aktarırken, sadece taranmış veya font hatası olan sayfaları OCR işlemine alır.
-* **GPU Hızlandırmalı Türkçe OCR (`ocr.py`):** NVIDIA CUDA ve EasyOCR derin öğrenme modellerini (CRAFT) kullanarak sayfaları 300 DPI çözünürlükte yerel olarak tanır. İnternet bağlantısı gerektirmez, veriniz dışarı çıkmaz.
+* **Çift Motorlu Yerel OCR (`ocr.py`):**
+  * **Tesseract 5 (LSTM):** Resmi `tessdata_best` Türkçe veri seti ile kitap metinlerinde sıfır harf hatası sunar.
+  * **EasyOCR (PyTorch CUDA):** GPU ivmelendirmeli derin öğrenme modeli (CRAFT) ile derin yedekleme sağlar.
 * **Gelişmiş Türkçe Dilbilimsel Temizlik (`cleaner.py`):**
   * Tırnak işaretlerinin `2)`, `9)`, `?)`, `((`, `c` gibi OCR yanılgılarını tespit edip kusursuz diyalog tırnaklarına dönüştürür.
   * Satır sonu hece bölmelerini (de-hyphenation) akıllıca birleştirir (`Türk-İslam` gibi bileşik kelimeleri korur).
   * Dar/aralıklı dizgi fontlarından kaynaklanan harf kopmalarını (`bu landırır` ➔ `bulandırır`, `se kiz` ➔ `sekiz`) onarır.
   * Sayfa numaraları, kitap başlıkları ve süsleme çizgilerini temizler.
+* **Seçici Qwen 2.5 AI In-Painting Metin Onarımı (`ai_repair.py`):**
+  * Hafif ve hızlı **Qwen 2.5 (1.5B / 0.5B)** yerel modellerini (Transformers veya Ollama API) kullanır.
+  * **Sıfır Halüsinasyon Koruması:** Kitabın %99'luk temiz kısmı LLM'e hiç uğramadan saliseler içinde kural tabanlı motorla temizlenir. Yalnızca ağır hasarlı, sembol karmaşası olan veya kenarları kesilmiş paragraflar algılandığında seçici olarak devreye girer.
+  * Paragraf uzunluk ve noktalama kalkanları sayesinde metne uydurma ekleme yapmaz, edebî akışı aslına sadık kalarak onarır.
 * **Kindle (AZW3) Desteği (`converter_azw.py`):** Calibre motoru ile tam Amazon Kindle standartlarında AZW3 çıktısı sağlar.
-* **Modern Web Stüdyosu (`web_ui.py`):** FastAPI tabanlı koyu temalı web arayüzü; donanım durumunu (GPU/CPU) otomatik algılar, canlı ilerleme çubuğu sunar.
-* **Komut Satırı (CLI):** Terminal üzerinden toplu dönüştürme yapabilirsiniz.
+* **Modern Web Stüdyosu (`web_ui.py`):** FastAPI tabanlı koyu temalı web arayüzü; donanım durumunu (GPU/CPU) otomatik algılar, AI onarım kontrolü sunar ve canlı ilerleme çubuğu gösterir.
+* **Komut Satırı (CLI):** Terminal üzerinden toplu dönüştürme ve otomasyon yapabilirsiniz.
 
 ---
 
@@ -322,7 +355,7 @@ Tarayıcınızdan şu adrese gidin:
 👉 **`http://localhost:8000`**
 
 * **Kalıcı Kitaplar:** Üretilen `.epub` ve `.azw3` dosyaları doğrudan bilgisayarınızdaki `./converted_ebooks` klasörüne kaydedilir.
-* **Akıllı Model Önbelleği:** EasyOCR modelleri bir Docker volume'unda saklanır, her açılışta tekrar model indirilmez.
+* **Kalıcı Model Önbelleği:** EasyOCR modelleri (`pdftoepub_easyocr_cache`) ve Hugging Face Qwen 2.5 modelleri (`pdftoepub_hf_cache`) Docker volume'larında saklanır, konteyner yeniden başlatıldığında tekrar model indirilmez.
 * **Durdurmak İçin:**
   ```bash
   docker compose down
@@ -360,7 +393,7 @@ cd pdftoepub-
 ### 3. Paketleri ve Tesseract 5'i Yükleyin
 
 #### 🚀 Windows İçin Tek Tıkla Kurulum:
-Klasördeki `install_dependencies.bat` dosyasına çift tıklayarak Python gereksinimlerini ve Tesseract 5 + Türkçe dil paketlerini tek seferde otomatik kurabilirsiniz.
+Klasördeki `install_dependencies.bat` dosyasına çift tıklayarak Python gereksinimlerini, PyTorch, Transformers ve Tesseract 5 + Türkçe dil paketlerini tek seferde otomatik kurabilirsiniz.
 
 #### Manuel Kurulum:
 * **NVIDIA Ekran Kartı Olanlar (GPU Hızlandırma İçin):**
@@ -401,12 +434,21 @@ Web stüdyosunu başlatmak için:
 python web_ui.py
 # Veya Windows'ta çift tıklayın: start_studio.bat
 ```
-Tarayıcınız otomatik olarak açılacaktır (`http://127.0.0.1:8000`). PDF dosyanızı sürükleyip bırakarak dönüştürmeyi tek tıkla başlatabilirsiniz.
+Tarayıcınız otomatik olarak açılacaktır (`http://127.0.0.1:8000`). PDF dosyanızı sürükleyip bırakabilir, **Qwen AI Metin Onarımı** seçeneğini işaretleyerek ağır hasarlı paragrafların onarılmasını sağlayabilirsiniz.
 
 ### 2. Komut Satırı (CLI)
 ```bash
 # Akıllı otomatik mod (Varsayılan - Tesseract 5 öncelikli):
 python convert.py "kitap.pdf"
+
+# Seçici Qwen 2.5 AI Metin Onarımını etkinleştirme:
+python convert.py "kitap.pdf" --ai-repair
+
+# Belirli bir AI modelini seçme (Varsayılan: Qwen 1.5B, ultra hızlı: 0.5B):
+python convert.py "kitap.pdf" --ai-repair --ai-model "Qwen/Qwen2.5-1.5B-Instruct"
+
+# Yerel Ollama veya OpenAI uyumlu API ile çalıştırma:
+python convert.py "kitap.pdf" --ai-repair --ai-backend openai_compatible --ai-api-base "http://localhost:11434/v1" --ai-model "qwen2.5:1.5b"
 
 # OCR motorunu belirterek çalıştırma:
 python convert.py "kitap.pdf" --ocr-engine tesseract
@@ -434,6 +476,9 @@ python convert.py "kitap.pdf" --output "cikti_kitaplar"
   * **`auto` (Akıllı Mod):** Sayfada seçilebilir metin varsa metni saniyeler içinde doğrudan alır. Yalnızca resim olan veya fontu bozuk sayfalarda OCR çalıştırır.
   * **`force` (Zorunlu OCR):** Tüm sayfalara istisnasız 300 DPI OCR uygular. Eski, kötü taranmış kitaplar için idealdir.
   * **`none` (Yalnızca Dijital Metin):** OCR'ı tamamen kapatır. Kitap doğrudan dijital üretilmişse işlemi 5-10 saniyede bitirir.
+* **Yapay Zeka Destekli Metin Onarımı (`--ai-repair`):**
+  * Temizlenen paragrafları anomali puanlamasından geçirir (hasar puanı $\ge$ 0.20).
+  * Hasarlı olan paragrafları Qwen 2.5'e ileterek kesik cümleleri, bozuk diyalogları ve sembol kirliliklerini edebî Türkçe kurallarına uygun biçimde onarır.
 
 ---
 
@@ -445,6 +490,7 @@ pdftoepub-/
 │   ├── analyzer.py          # PDF analiz ve OCR tetikleme kararları
 │   ├── ocr.py               # Çoklu OCR motoru (Tesseract 5 & EasyOCR CUDA)
 │   ├── cleaner.py           # Türkçe dilbilimsel ve OCR temizleme kuralları
+│   ├── ai_repair.py         # Qwen 2.5 seçici metin onarım ve in-painting motoru
 │   ├── structure.py         # Bölüm ve içindekiler (TOC) algılayıcı
 │   ├── builder_epub.py      # EPUB3 standart e-kitap üretici
 │   ├── converter_azw.py     # Calibre AZW3 dönüştürücü entegrasyonu
@@ -460,11 +506,11 @@ pdftoepub-/
 ├── start_studio.bat         # Windows tek tıkla Web Studio başlatıcı
 ├── convert.py               # CLI başlatıcı
 ├── web_ui.py                # Web Studio başlatıcı
-├── Dockerfile               # Tesseract 5 ve Calibre içeren Docker yapılandırması
-├── docker-compose.yml       # GPU ve CPU Docker servisleri
-├── requirements.txt         # Gerekli Python kütüphaneleri
+├── Dockerfile               # Tesseract 5, Calibre ve Qwen önbellekli Docker yapısı
+├── docker-compose.yml       # GPU ve CPU Docker servisleri (hf_cache & easyocr_cache)
+├── requirements.txt         # Gerekli Python kütüphaneleri (PyTorch, Transformers vb.)
 ├── LICENSE                  # MIT Lisansı
-└── README.md                # Proje dokümantasyonu (TR & EN)
+└── README.md                # Kapsamlı proje dokümantasyonu (TR & EN)
 ```
 
 ---

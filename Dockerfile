@@ -47,8 +47,8 @@ COPY . .
 # Expose FastAPI Web UI port
 EXPOSE 8000
 
-# Declare persistent volumes for output ebooks and EasyOCR model weights cache
-VOLUME ["/app/converted_ebooks", "/root/.EasyOCR"]
+# Declare persistent volumes for output ebooks, EasyOCR, and Hugging Face (Qwen AI) cache
+VOLUME ["/app/converted_ebooks", "/root/.EasyOCR", "/root/.cache/huggingface"]
 
 # Healthcheck to verify the web service is responding
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \

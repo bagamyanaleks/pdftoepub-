@@ -14,6 +14,7 @@ services:
     volumes:
       - ./converted_ebooks:/app/converted_ebooks
       - easyocr_cache:/root/.EasyOCR
+      - hf_cache:/root/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
       - HOST=0.0.0.0
@@ -42,6 +43,7 @@ services:
     volumes:
       - ./converted_ebooks:/app/converted_ebooks
       - easyocr_cache:/root/.EasyOCR
+      - hf_cache:/root/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
       - HOST=0.0.0.0
@@ -53,4 +55,6 @@ services:
 volumes:
   easyocr_cache:
     name: pdftoepub_easyocr_cache
+  hf_cache:
+    name: pdftoepub_hf_cache
 
