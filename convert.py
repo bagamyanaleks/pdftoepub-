@@ -8,7 +8,7 @@ import sys
 import argparse
 import glob
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+from rich.progress import Progress, TextColumn, BarColumn, TimeRemainingColumn
 from rich.table import Table
 from rich.panel import Panel
 

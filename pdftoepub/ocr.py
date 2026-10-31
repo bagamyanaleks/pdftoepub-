@@ -6,7 +6,7 @@ and EasyOCR (PyTorch GPU CUDA acceleration) with automatic detection and fallbac
 
 import os
 import shutil
-from typing import List, Tuple, Optional
+from typing import List, Optional
 import numpy as np
 
 
@@ -104,6 +104,8 @@ class OCREngine:
         self._reader = None
         self._cuda_available = None
         self._active_engine = None
+        self._tesseract_bin: Optional[str] = None
+        self._tess_lang: Optional[str] = None
 
         self._resolve_engine()
 
