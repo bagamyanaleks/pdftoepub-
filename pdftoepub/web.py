@@ -37,6 +37,9 @@ class ConvertExistingRequest(BaseModel):
     filename: str
     ocr_mode: str = "auto"
     ocr_engine: str = "auto"
+    ai_repair: bool = False
+    ai_backend: str = "transformers"
+    ai_model: str = "Qwen/Qwen2.5-1.5B-Instruct"
     title: Optional[str] = None
     author: Optional[str] = None
 
@@ -114,16 +117,26 @@ def run_conversion_job(
     ocr_mode: str,
     ocr_engine: str,
     title: Optional[str],
-    author: Optional[str]
+    author: Optional[str],
+    ai_repair: bool = False,
+    ai_backend: str = "transformers",
+    ai_model: str = "Qwen/Qwen2.5-1.5B-Instruct"
 ):
     filename = jobs.get(job_id, {}).get("filename", os.path.basename(pdf_path))
-    print(f"\n[+] Dönüştürme Başlatıldı: '{filename}' (OCR Modu: {ocr_mode}, Motor: {ocr_engine})")
+    ai_str = f", AI Onarım: Açık ({ai_model})" if ai_repair else ""
+    print(f"\n[+] Dönüştürme Başlatıldı: '{filename}' (OCR Modu: {ocr_mode}, Motor: {ocr_engine}{ai_str})")
 
     jobs[job_id]["status"] = "processing"
     jobs[job_id]["progress"] = 0.05
     jobs[job_id]["message"] = "Başlatılıyor..."
 
-    pipeline = ConversionPipeline(ocr_mode=ocr_mode, ocr_engine=ocr_engine)
+    pipeline = ConversionPipeline(
+        ocr_mode=ocr_mode,
+        ocr_engine=ocr_engine,
+        ai_repair=ai_repair,
+        ai_backend=ai_backend,
+        ai_model=ai_model
+    )
 
     last_milestone = [-1]
 
@@ -166,6 +179,9 @@ async def convert_uploaded_file(
     file: UploadFile = File(...),
     ocr_mode: str = Form("auto"),
     ocr_engine: str = Form("auto"),
+    ai_repair: bool = Form(False),
+    ai_backend: str = Form("transformers"),
+    ai_model: str = Form("Qwen/Qwen2.5-1.5B-Instruct"),
     title: Optional[str] = Form(None),
     author: Optional[str] = Form(None)
 ):
@@ -197,7 +213,10 @@ async def convert_uploaded_file(
         ocr_mode,
         ocr_engine,
         title,
-        author
+        author,
+        ai_repair,
+        ai_backend,
+        ai_model
     )
 
     return {"job_id": job_id}
@@ -229,7 +248,10 @@ async def convert_existing_file(
         req.ocr_mode,
         req.ocr_engine,
         req.title,
-        req.author
+        req.author,
+        req.ai_repair,
+        req.ai_backend,
+        req.ai_model
     )
 
     return {"job_id": job_id}

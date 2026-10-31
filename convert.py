@@ -33,7 +33,11 @@ def process_single_pdf(pdf_path: str, args) -> bool:
         ocr_mode=args.ocr,
         ocr_engine=args.ocr_engine,
         use_gpu=None if args.gpu is None else args.gpu,
-        calibre_path=args.calibre_path
+        calibre_path=args.calibre_path,
+        ai_repair=args.ai_repair,
+        ai_backend=args.ai_backend,
+        ai_model=args.ai_model,
+        ai_api_base=args.ai_api_base
     )
 
     with Progress(
@@ -67,6 +71,8 @@ def process_single_pdf(pdf_path: str, args) -> bool:
             table.add_row("Yazar", result["author"])
             table.add_row("Toplam Sayfa", str(result["total_pages"]))
             table.add_row("OCR Yapılan Sayfa", str(result["ocr_pages_count"]))
+            if result.get("ai_repairs_count", 0) > 0:
+                table.add_row("AI Onarım (Qwen)", f"[bold green]{result['ai_repairs_count']} hasarlı paragraf tamamlandı[/bold green]")
             table.add_row("Bölüm Sayısı", str(result["chapter_count"]))
             table.add_row("EPUB Çıktısı", f"[cyan]{result['epub_path']}[/cyan]")
             
@@ -97,6 +103,10 @@ def main():
     parser.add_argument("--title", "-t", help="Kitap başlığını manuel belirle", default=None)
     parser.add_argument("--author", "-a", help="Yazar adını manuel belirle", default=None)
     parser.add_argument("--calibre-path", help="Calibre ebook-convert.exe dosya yolu", default=None)
+    parser.add_argument("--ai-repair", action="store_true", default=False, help="Hasarlı/kopuk paragrafları yerel Qwen yapay zeka modeliyle onar")
+    parser.add_argument("--ai-backend", choices=["transformers", "openai_compatible", "ollama"], default="transformers", help="Yapay zeka motoru")
+    parser.add_argument("--ai-model", default="Qwen/Qwen2.5-1.5B-Instruct", help="Yapay zeka model adı")
+    parser.add_argument("--ai-api-base", default="http://localhost:11434/v1", help="Ollama veya yerel API adresi")
 
     args = parser.parse_args()
 

@@ -169,12 +169,22 @@ function clearSelectedFile(e) {
     document.querySelector('.dropzone-content').style.display = 'block';
 }
 
+function toggleAiOptions() {
+    const aiCheck = document.getElementById('ai-repair');
+    const container = document.getElementById('ai-model-container');
+    if (aiCheck && container) {
+        container.style.display = aiCheck.checked ? 'block' : 'none';
+    }
+}
+
 // Start Conversion Process
 async function startConversion() {
     const ocrEngine = document.getElementById('ocr-engine').value;
     const ocrMode = document.getElementById('ocr-mode').value;
     const title = document.getElementById('book-title').value.trim() || null;
     const author = document.getElementById('book-author').value.trim() || null;
+    const aiRepair = document.getElementById('ai-repair') ? document.getElementById('ai-repair').checked : false;
+    const aiModel = document.getElementById('ai-model') ? document.getElementById('ai-model').value : 'Qwen/Qwen2.5-1.5B-Instruct';
 
     let response;
 
@@ -188,6 +198,9 @@ async function startConversion() {
         formData.append('file', selectedFile);
         formData.append('ocr_engine', ocrEngine);
         formData.append('ocr_mode', ocrMode);
+        formData.append('ai_repair', aiRepair ? 'true' : 'false');
+        formData.append('ai_backend', 'transformers');
+        formData.append('ai_model', aiModel);
         if (title) formData.append('title', title);
         if (author) formData.append('author', author);
 
@@ -213,7 +226,10 @@ async function startConversion() {
                 ocr_engine: ocrEngine,
                 ocr_mode: ocrMode,
                 title: title,
-                author: author
+                author: author,
+                ai_repair: aiRepair,
+                ai_backend: 'transformers',
+                ai_model: aiModel
             })
         });
     }
@@ -299,6 +315,17 @@ function showCompletedState(result) {
     document.getElementById('stat-ocr').textContent = result.ocr_pages_count;
     document.getElementById('stat-chapters').textContent = result.chapter_count;
 
+    const aiContainer = document.getElementById('stat-ai-container');
+    const aiStat = document.getElementById('stat-ai');
+    if (aiContainer && aiStat) {
+        if (result.ai_repairs_count !== undefined && result.ai_repairs_count > 0) {
+            aiStat.textContent = result.ai_repairs_count;
+            aiContainer.style.display = 'flex';
+        } else {
+            aiContainer.style.display = 'none';
+        }
+    }
+
     // EPUB Download
     const epubBtn = document.getElementById('btn-download-epub');
     epubBtn.href = `/api/download/epub/${activeJobId}`;
@@ -322,6 +349,8 @@ function showCompletedState(result) {
 function resetConverter() {
     if (pollInterval) clearInterval(pollInterval);
     activeJobId = null;
+    const aiContainer = document.getElementById('stat-ai-container');
+    if (aiContainer) aiContainer.style.display = 'none';
     document.getElementById('state-completed').style.display = 'none';
     document.getElementById('state-processing').style.display = 'none';
     document.getElementById('state-idle').style.display = 'flex';

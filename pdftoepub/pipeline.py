@@ -14,6 +14,7 @@ import pymupdf as fitz
 from .analyzer import PDFAnalyzer, PageType
 from .ocr import OCREngine
 from .cleaner import TextCleaner
+from .ai_repair import AIRepairEngine
 from .structure import StructureDetector, DocumentBlock
 from .media import MediaManager
 from .builder_epub import EPUBBuilder
@@ -72,13 +73,24 @@ class ConversionPipeline:
         ocr_mode: str = "auto",  # "auto", "force", "none"
         ocr_engine: str = "auto",  # "auto", "tesseract", "easyocr"
         use_gpu: Optional[bool] = None,
-        calibre_path: Optional[str] = None
+        calibre_path: Optional[str] = None,
+        ai_repair: bool = False,
+        ai_backend: str = "transformers",
+        ai_model: str = "Qwen/Qwen2.5-0.5B-Instruct",
+        ai_api_base: str = "http://localhost:11434/v1"
     ):
         self.ocr_mode = ocr_mode
         self.ocr_engine = ocr_engine
         self.use_gpu = use_gpu
+        self.ai_repair = ai_repair
         self.analyzer = PDFAnalyzer()
         self.cleaner = TextCleaner()
+        self.ai_repair_engine = AIRepairEngine(
+            enabled=ai_repair,
+            backend=ai_backend,
+            model_name=ai_model,
+            api_base=ai_api_base
+        )
         self.structure_detector = StructureDetector()
         self.azw_converter = AZW3Converter(custom_calibre_path=calibre_path)
         self._ocr_engine: Optional[OCREngine] = None
@@ -155,6 +167,7 @@ class ConversionPipeline:
         media_mgr = MediaManager(temp_workspace)
 
         doc = fitz.open(pdf_path)
+        total_ai_repairs = 0
         document_blocks: List[DocumentBlock] = []
         pending_footnotes: List[str] = []
 
@@ -278,6 +291,11 @@ class ConversionPipeline:
                         author=book_author
                     )
 
+                    # Step 5b: Selective AI Repair on heavily damaged paragraphs
+                    if self.ai_repair and self.ai_repair_engine:
+                        cleaned_page_text, rep_count = self.ai_repair_engine.repair_full_text(cleaned_page_text)
+                        total_ai_repairs += rep_count
+
                     paragraphs = cleaned_page_text.split("\n\n")
                     first_p = True
                     past_header = not is_toc_chapter_start
@@ -392,6 +410,7 @@ class ConversionPipeline:
                 "author": book_author,
                 "total_pages": total_pages,
                 "ocr_pages_count": analysis.ocr_required_page_count,
+                "ai_repairs_count": total_ai_repairs,
                 "chapter_count": len(chapters),
                 "epub_path": epub_path,
                 "azw3_path": azw3_path if azw3_success else None,
