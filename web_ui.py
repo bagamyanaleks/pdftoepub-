@@ -4,7 +4,6 @@ Runs FastAPI with Uvicorn and provides a safe, GPU-optimized local web studio.
 """
 
 import os
-import sys
 import webbrowser
 import threading
 import time

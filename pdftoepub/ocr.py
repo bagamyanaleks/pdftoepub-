@@ -156,7 +156,7 @@ class OCREngine:
     def is_cuda_available(self) -> bool:
         if self._cuda_available is None:
             try:
-                import torch
+                import torch  # type: ignore
                 self._cuda_available = torch.cuda.is_available()
             except ImportError:
                 self._cuda_available = False
@@ -164,8 +164,8 @@ class OCREngine:
 
     def _get_easyocr_reader(self):
         if self._reader is None:
-            import easyocr
-            import torch
+            import easyocr  # type: ignore
+            import torch  # type: ignore
 
             gpu_flag = self.is_cuda_available if self._use_gpu is None else self._use_gpu
             device_name = torch.cuda.get_device_name(0) if (gpu_flag and torch.cuda.is_available()) else "CPU"

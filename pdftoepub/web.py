@@ -6,11 +6,9 @@ real-time progress tracking, and direct downloads.
 
 import os
 import uuid
-import glob
-import asyncio
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -35,9 +33,9 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 class ConvertExistingRequest(BaseModel):
     filename: str
-    ocr_mode: str = "auto"
-    ocr_engine: str = "auto"
-    ai_repair: bool = False
+    ocr_mode: str = "force"
+    ocr_engine: str = "tesseract"
+    ai_repair: bool = True
     ai_backend: str = "transformers"
     ai_model: str = "Qwen/Qwen2.5-1.5B-Instruct"
     title: Optional[str] = None
@@ -60,7 +58,7 @@ def get_cached_system_status() -> Dict[str, Any]:
     global _SYSTEM_STATUS
     if _SYSTEM_STATUS is None:
         try:
-            import torch
+            import torch  # type: ignore
             from .converter_azw import AZW3Converter
 
             cuda_avail = torch.cuda.is_available()
@@ -177,15 +175,15 @@ def run_conversion_job(
 async def convert_uploaded_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    ocr_mode: str = Form("auto"),
-    ocr_engine: str = Form("auto"),
-    ai_repair: bool = Form(False),
+    ocr_mode: str = Form("force"),
+    ocr_engine: str = Form("tesseract"),
+    ai_repair: bool = Form(True),
     ai_backend: str = Form("transformers"),
     ai_model: str = Form("Qwen/Qwen2.5-1.5B-Instruct"),
     title: Optional[str] = Form(None),
     author: Optional[str] = Form(None)
 ):
-    if not file.filename.lower().endswith(".pdf"):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Lütfen geçerli bir PDF dosyası yükleyin.")
 
     job_id = str(uuid.uuid4())

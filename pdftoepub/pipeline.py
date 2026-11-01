@@ -70,13 +70,13 @@ def _is_chapter_header_or_noise(p: str, title: str) -> bool:
 class ConversionPipeline:
     def __init__(
         self,
-        ocr_mode: str = "auto",  # "auto", "force", "none"
-        ocr_engine: str = "auto",  # "auto", "tesseract", "easyocr"
+        ocr_mode: str = "force",  # "auto", "force", "none"
+        ocr_engine: str = "tesseract",  # "auto", "tesseract", "easyocr"
         use_gpu: Optional[bool] = None,
         calibre_path: Optional[str] = None,
-        ai_repair: bool = False,
+        ai_repair: bool = True,
         ai_backend: str = "transformers",
-        ai_model: str = "Qwen/Qwen2.5-0.5B-Instruct",
+        ai_model: str = "Qwen/Qwen2.5-1.5B-Instruct",
         ai_api_base: str = "http://localhost:11434/v1"
     ):
         self.ocr_mode = ocr_mode

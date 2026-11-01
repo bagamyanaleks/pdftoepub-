@@ -111,16 +111,16 @@
                         <div class="form-group">
                             <label for="ocr-engine">OCR Motoru</label>
                             <select id="ocr-engine" class="custom-select">
-                                <option value="auto" selected>Akıllı Otomatik (Tesseract 5 Öncelikli)</option>
-                                <option value="tesseract">Tesseract 5 (En Yüksek Türkçe Doğruluk)</option>
+                                <option value="auto">Akıllı Otomatik (Tesseract 5 Öncelikli)</option>
+                                <option value="tesseract" selected>Tesseract 5 (En Yüksek Türkçe Doğruluk)</option>
                                 <option value="easyocr">EasyOCR (PyTorch GPU CUDA)</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="ocr-mode">Tarama Kapsamı</label>
                             <select id="ocr-mode" class="custom-select">
-                                <option value="auto" selected>Akıllı Otomatik (Yalnızca Gerektiğinde)</option>
-                                <option value="force">Tüm Sayfaları OCR'dan Geçir</option>
+                                <option value="auto">Akıllı Otomatik (Yalnızca Gerektiğinde)</option>
+                                <option value="force" selected>Tüm Sayfaları OCR'dan Geçir (En Yüksek Kalite)</option>
                                 <option value="none">OCR Yapma (Yalnızca Vektör Metin)</option>
                             </select>
                         </div>
@@ -140,14 +140,14 @@
                     <div class="form-row" style="margin-top: 4px; padding: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px;">
                         <div class="form-group" style="flex: 1;">
                             <label for="ai-repair" style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 4px;">
-                                <input type="checkbox" id="ai-repair" onchange="toggleAiOptions()" style="width: 18px; height: 18px; cursor: pointer;">
+                                <input type="checkbox" id="ai-repair" checked onchange="toggleAiOptions()" style="width: 18px; height: 18px; cursor: pointer;">
                                 <span><strong>Qwen AI Metin Onarımı (In-Painting)</strong></span>
                             </label>
                             <small style="color: var(--text-muted); display: block; font-size: 0.8rem;">
                                 Ağır hasarlı, kopuk veya taranma sırasında sağ/sol kenarı kesilmiş paragrafları edebî akışa göre Qwen 2.5 ile onarır.
                             </small>
                         </div>
-                        <div class="form-group" id="ai-model-container" style="display: none; flex: 1;">
+                        <div class="form-group" id="ai-model-container" style="display: block; flex: 1;">
                             <label for="ai-model">Yapay Zeka Modeli</label>
                             <select id="ai-model" class="custom-select">
                                 <option value="Qwen/Qwen2.5-1.5B-Instruct" selected>Qwen 2.5 (1.5B) - Yüksek Kalite & Akıcı Türkçe</option>
