@@ -12,8 +12,14 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .pipeline import ConversionPipeline
-from .ocr import is_tesseract_available, find_tesseract_binary
+try:
+    from .pipeline import ConversionPipeline
+    from .ocr import is_tesseract_available, find_tesseract_binary
+except (ImportError, ValueError):
+    import sys
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    from pdftoepub.pipeline import ConversionPipeline
+    from pdftoepub.ocr import is_tesseract_available, find_tesseract_binary
 
 
 app = FastAPI(title="PDF to EPUB & AZW3 Studio", version="1.0.0")
@@ -59,7 +65,10 @@ def get_cached_system_status() -> Dict[str, Any]:
     if _SYSTEM_STATUS is None:
         try:
             import torch  # type: ignore
-            from .converter_azw import AZW3Converter
+            try:
+                from .converter_azw import AZW3Converter
+            except (ImportError, ValueError):
+                from pdftoepub.converter_azw import AZW3Converter
 
             cuda_avail = torch.cuda.is_available()
             device_name = torch.cuda.get_device_name(0) if cuda_avail else "CPU"
@@ -285,3 +294,10 @@ async def download_converted_file(fmt: str, job_id: str):
         media_type=media_type,
         filename=os.path.basename(target)
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    print("\n[+] Web Studio Doğrudan Başlatılıyor: http://127.0.0.1:8000")
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
